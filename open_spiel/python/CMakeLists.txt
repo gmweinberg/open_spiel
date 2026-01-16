@@ -231,6 +231,7 @@ set(PYTHON_TESTS ${PYTHON_TESTS}
   games/data_test.py
   games/dynamic_routing_test.py
   games/dynamic_routing_utils_test.py
+  games/hangman_test.py
   games/liars_poker_test.py
   games/pokerkit_wrapper_test.py
   games/team_dominoes_test.py
@@ -285,6 +286,7 @@ set(PYTHON_TESTS ${PYTHON_TESTS}
 # Add Jax tests if it is enabled.
 if (OPEN_SPIEL_ENABLE_JAX)
   set (PYTHON_TESTS ${PYTHON_TESTS}
+    jax/deep_cfr_jax_test.py
     jax/dqn_jax_test.py
     jax/nfsp_jax_test.py
     jax/opponent_shaping_jax_test.py
