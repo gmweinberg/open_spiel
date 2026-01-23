@@ -1,0 +1,6 @@
+torch
+dm-tree
+fastapi
+uvicorn[standard]
+jax[cuda12]
+
