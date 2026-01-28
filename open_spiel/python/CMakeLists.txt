@@ -183,8 +183,7 @@ endif()
 # Python tests to run. Start with all the core tests here first, then
 # conditionally add other tests based on what has been enabled/detected.
 set(PYTHON_TESTS ${PYTHON_TESTS}
-  # Disabled until we can reduce the length. See #1371.
-  # ../integration_tests/api_test.py
+  ../integration_tests/api_test.py
   ../integration_tests/playthrough_test.py
   algorithms/action_value_test.py
   algorithms/action_value_vs_best_response_test.py
@@ -260,6 +259,7 @@ set(PYTHON_TESTS ${PYTHON_TESTS}
   tests/games_chess_test.py
   tests/games_connect_four_test.py
   tests/games_crazy_eights_test.py
+  tests/games_crazyhouse_test.py
   tests/games_euchre_test.py
   tests/games_gin_rummy_test.py
   tests/games_go_test.py
