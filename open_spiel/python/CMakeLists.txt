@@ -263,7 +263,7 @@ set(PYTHON_TESTS ${PYTHON_TESTS}
   tests/games_euchre_test.py
   tests/games_gin_rummy_test.py
   tests/games_go_test.py
-  tests/games_gomku_test.py
+  tests/games_gomoku_test.py
   tests/games_hearts_test.py
   tests/games_repeated_poker_test.py
   tests/games_sim_test.py

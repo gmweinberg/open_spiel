@@ -55,6 +55,7 @@
 #include "open_spiel/python/pybind11/games_gin_rummy.h"
 #include "open_spiel/python/pybind11/games_gomoku.h"
 #include "open_spiel/python/pybind11/games_go.h"
+#include "open_spiel/python/pybind11/games_gomoku.h"
 #include "open_spiel/python/pybind11/games_hearts.h"
 #include "open_spiel/python/pybind11/games_kuhn_poker.h"
 #include "open_spiel/python/pybind11/games_leduc_poker.h"
