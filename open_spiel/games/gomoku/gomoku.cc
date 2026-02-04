@@ -353,6 +353,35 @@ int GomokuGame::NumDistinctActions() const {
 	return total_size_;
 }
 
+uint64_t GomokuState::ComputeZobrist(
+  const Grid<Stone>& grid) const {
+    const auto* gomoku = static_cast<const GomokuGame*>(game_.get());
+    uint64_t h = 0;
+    for (int i = 0; i < grid.NumCells(); ++i) {
+      Stone s = grid.AtIndex(i);
+      if (s != Stone::kEmpty) {
+         h ^= gomoku->ZobristTable()[i][StoneToInt(s)];
+      }
+    }
+    if (current_player_ == 1) {
+      h ^= gomoku->PlayerToMoveHash();
+    }
+    return h;
+}
+
+uint64_t GomokuState::SymmetricHash() const {
+  uint64_t best = ComputeZobrist(board_);
+
+  for (auto [i, j] : board_.GenRotations()) {
+		for (int k = 0; k < 4; ++k) {
+      Grid<Stone> rotated = board_.ApplyRotation(i, j);
+      uint64_t h = ComputeZobrist(rotated);
+      best = std::min(best, h);
+		}
+  }
+  return best;
+}
+
 GomokuState::GomokuState(std::shared_ptr<const Game> game,
                          const std::string& state_str)
     : State(game),
@@ -412,15 +441,7 @@ GomokuState::GomokuState(std::shared_ptr<const Game> game,
     }
     board_.AtIndex(i) = s;
   }
-	for (int i = 0; i < board_.NumCells(); ++i) {
-    if (board_.AtIndex(i) != Stone::kEmpty) {
-      zobrist_hash_ ^= 
-       gomoku->ZobristTable()[i][StoneToInt(board_.AtIndex(i))];
-    }
-  }
-	if (current_player_ == 1) {
-    zobrist_hash_ ^= gomoku->PlayerToMoveHash();
-  }
+	zobrist_hash_ = ComputeZobrist(board_);
 }
 
 

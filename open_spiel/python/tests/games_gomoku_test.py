@@ -40,11 +40,17 @@ class GamesGomokuTest(parameterized.TestCase):
     print(move)
 
   def test_gomoku_hash(self):
-    game = pyspiel.load_game("gomoku")
+    game = pyspiel.load_game("gomoku(size=3,connect=3)")
     state = game.new_initial_state()
     print("hash", state.hash_value())
     state.apply_action(1)
     print("hash", state.hash_value())
+    print("sym", state.symmetric_hash())
+    state = game.new_initial_state()
+    state.apply_action(5)
+    print("hash", state.hash_value())
+    print("sym", state.symmetric_hash())
+
 
   def test_gommoku_game_sim(self):
       game = pyspiel.load_game("gomoku")

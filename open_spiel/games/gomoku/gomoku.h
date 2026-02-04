@@ -57,6 +57,21 @@ enum class Stone {
 	kWhite,
 };
 
+struct SymmetryPolicy {
+  // If symmetric hashing is used at all, basic rotations are always included.
+
+  // Allow compositions of rotations (meaningful in >=3D, no-op in 2D).
+  bool allow_composed_rotations = false;
+
+  // Allow straight (axis) reflections.
+  bool allow_reflections = false;
+
+  // Allow compositions of reflections with rotations
+  // (i.e. diagonal / rotated reflections).
+  bool allow_reflection_rotations = false;
+};
+
+
 
 // State of an in-play game.
 class GomokuState : public State {
@@ -90,6 +105,14 @@ class GomokuState : public State {
   void UndoAction(Player player, Action move) override;
   std::vector<Action> LegalActions() const override;
 	uint64_t HashValue() const;
+  void SetSymmetryPolicy(const SymmetryPolicy& policy) {
+    symmetry_policy_ = policy;
+  }
+  const SymmetryPolicy& GetSymmetryPolicy() const {
+    return symmetry_policy_;
+  }
+	uint64_t ComputeZobrist(const Grid<Stone>& grid) const;
+	uint64_t SymmetricHash() const;
 
  protected:
   void DoApplyAction(Action move) override;
@@ -108,6 +131,7 @@ class GomokuState : public State {
 	float white_score_;
 	bool terminal_ =  false;
 	uint64_t zobrist_hash_ = 0;
+  SymmetryPolicy symmetry_policy_;
 };
 
 // Game object.
