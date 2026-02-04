@@ -61,6 +61,9 @@ void open_spiel::init_pyspiel_games_gomoku(::pybind11::module &m) {
   py::classh<GomokuState, State>(m, "GomokuState")
     .def("hash_value", &GomokuState::HashValue)
     .def("symmetric_hash", &GomokuState::SymmetricHash)
+		.def("winning_line", &GomokuState::WinningLine,
+       py::return_value_policy::reference_internal)
+
 		.def(py::pickle(
        [](const GomokuState& state) {
        return SerializeGameAndState(*state.GetGame(), state);
@@ -78,8 +81,6 @@ void open_spiel::init_pyspiel_games_gomoku(::pybind11::module &m) {
 
   py::class_<SymmetryPolicy>(m, "SymmetryPolicy")
     .def(py::init<>())
-    .def_readwrite("allow_composed_rotations",
-                   &SymmetryPolicy::allow_composed_rotations)
     .def_readwrite("allow_reflections",
                    &SymmetryPolicy::allow_reflections)
     .def_readwrite("allow_reflection_rotations",

@@ -57,11 +57,15 @@ enum class Stone {
 	kWhite,
 };
 
+// Treating positions equivalent under a symmetry operation as equivalent can speed
+// up a tree search, but searchingbthe whole symmetry space may be more trouble
+// than it is worth. There are additional symmetries resulting from composed
+// rotations in 3 or more dimensions that we do not see here, and the
+// possible translation symmetries when wrap is true are probably not even
+// worth thinking about.
+
 struct SymmetryPolicy {
   // If symmetric hashing is used at all, basic rotations are always included.
-
-  // Allow compositions of rotations (meaningful in >=3D, no-op in 2D).
-  bool allow_composed_rotations = false;
 
   // Allow straight (axis) reflections.
   bool allow_reflections = false;
@@ -113,6 +117,9 @@ class GomokuState : public State {
   }
 	uint64_t ComputeZobrist(const Grid<Stone>& grid) const;
 	uint64_t SymmetricHash() const;
+	absl::optional<std::vector<Grid<Stone>::Coord>>
+		FindWinLineFromLastMove(Action last_move) const;
+	const std::vector<Grid<Stone>::Coord>& WinningLine() const;
 
  protected:
   void DoApplyAction(Action move) override;
@@ -132,6 +139,7 @@ class GomokuState : public State {
 	bool terminal_ =  false;
 	uint64_t zobrist_hash_ = 0;
   SymmetryPolicy symmetry_policy_;
+	std::vector<Grid<Stone>::Coord> winning_line_;
 };
 
 // Game object.

@@ -64,6 +64,17 @@ class GamesGomokuTest(parameterized.TestCase):
           mc += 1
         print("mc", mc)
 
+  def test_winning_line(self):
+      game = pyspiel.load_game("gomoku(size=3,connect=3)")
+      state = game.new_initial_state()
+      state.apply_action(0)
+      state.apply_action(1)
+      state.apply_action(4)
+      state.apply_action(2)
+      state.apply_action(8)
+      print(state.winning_line())
+      print(state.returns())
+
 if __name__ == "__main__":
   np.random.seed(87375711)
   absltest.main()

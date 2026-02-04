@@ -174,60 +174,75 @@ void GomokuState::DoApplyAction(Action move) {
 	CheckWinFromLastMove(move);
 }
 
-void GomokuState::CheckWinFromLastMove(Action last_move) {
+absl::optional<std::vector<Grid<Stone>::Coord>>
+GomokuState::FindWinLineFromLastMove(Action last_move) const {
+  using Coord = Grid<Stone>::Coord;
 
-  const Grid<Stone>::Coord start =
-      board_.Unflatten(last_move);
+  const Coord start = board_.Unflatten(last_move);
   const Stone stone = board_.At(start);
-	const auto* gomoku = static_cast<const GomokuGame*>(game_.get());
 
   SPIEL_CHECK_NE(stone, Stone::kEmpty);
 
   for (const auto& dir : board_.Directions()) {
     if (!board_.IsCanonical(dir)) continue;
 
-    int count = 1;  // include the starting stone
+    std::vector<Coord> line;
+    line.push_back(start);
 
-    // forward direction
+    // forward
     {
-      auto c = start;
-      while (count < connect_ && board_.Step(c, dir) &&
+      Coord c = start;
+      while ((int)line.size() < connect_ &&
+             board_.Step(c, dir) &&
              board_.At(c) == stone) {
-        ++count;
+        line.push_back(c);
       }
     }
 
-    // backward direction
+    // backward
     {
-      auto neg_dir = dir;
+      Coord neg_dir = dir;
       for (int& v : neg_dir) v = -v;
 
-      auto c = start;
-      while (count < connect_ && board_.Step(c, neg_dir) &&
+      Coord c = start;
+      while ((int)line.size() < connect_ &&
+             board_.Step(c, neg_dir) &&
              board_.At(c) == stone) {
-        ++count;
+        line.insert(line.begin(), c);
       }
     }
-    // currrent player just moved
-    if (count >= connect_) {
-			terminal_ = true;
-			if (current_player_ == 0){
-				black_score_ = 1.0;
-				white_score_ = -1.0;
-			} else {
-				black_score_ = -1.0;
-				white_score_ = 1.0;
-			}
-			if (gomoku->Anti()){
-					black_score_ *= -1;
-					white_score_ *= -1;
-			}
-      return;
+
+    if ((int)line.size() >= connect_) {
+      line.resize(connect_);  // arbitrary truncation is fine
+      return line;
     }
   }
-  if (move_count_ + initial_stones_ == board_.NumCells()) {
-		terminal_ = true;
-	}
+
+  return absl::nullopt;
+}
+
+void GomokuState::CheckWinFromLastMove(Action last_move) {
+  auto maybe_line = FindWinLineFromLastMove(last_move);
+  if (maybe_line.has_value()) {
+    terminal_ = true;
+    winning_line_ = *maybe_line;
+    if (current_player_ == 0){
+        black_score_ = -1.0;
+        white_score_ = 1.0;
+      } else {
+        black_score_ = 1.0;
+        white_score_ = -1.0;
+      }
+		}
+	  const auto* gomoku = static_cast<const GomokuGame*>(game_.get());
+		if (gomoku->Anti()) {
+				black_score_ *= -1;
+				white_score_ *= -1;
+		}
+}
+
+const std::vector<Grid<Stone>::Coord>& GomokuState::WinningLine() const {
+  return winning_line_;
 }
 
 std::vector<Action> GomokuState::LegalActions() const {
@@ -372,15 +387,37 @@ uint64_t GomokuState::ComputeZobrist(
 uint64_t GomokuState::SymmetricHash() const {
   uint64_t best = ComputeZobrist(board_);
 
+  // --- Basic rotations ---
   for (auto [i, j] : board_.GenRotations()) {
-		for (int k = 0; k < 4; ++k) {
-      Grid<Stone> rotated = board_.ApplyRotation(i, j);
-      uint64_t h = ComputeZobrist(rotated);
-      best = std::min(best, h);
-		}
+    Grid<Stone> rotated = board_;
+    for (int r = 0; r < 3; ++r) {  // 90, 180, 270
+      rotated = rotated.ApplyRotation(i, j);
+      best = std::min(best, ComputeZobrist(rotated));
+    }
   }
+
+  // --- Reflections ---
+  if (symmetry_policy_.allow_reflections) {
+    for (int axis = 0; axis < dims_; ++axis) {
+      Grid<Stone> refl = board_.ApplyReflection(axis);
+      best = std::min(best, ComputeZobrist(refl));
+
+      // --- Reflection + rotations ---
+      if (symmetry_policy_.allow_reflection_rotations) {
+        for (auto [i, j] : board_.GenRotations()) {
+          Grid<Stone> rotated = refl;
+          for (int r = 0; r < 3; ++r) {
+            rotated = rotated.ApplyRotation(i, j);
+            best = std::min(best, ComputeZobrist(rotated));
+          }
+        }
+      }
+    }
+  }
+
   return best;
 }
+
 
 GomokuState::GomokuState(std::shared_ptr<const Game> game,
                          const std::string& state_str)
