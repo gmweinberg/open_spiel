@@ -49,8 +49,6 @@ inline constexpr int kNumPlayers = 2;
 inline constexpr int kBlackPlayer = 0;
 inline constexpr int kWhitePlayer = 1;
 
-
-//
 enum class Stone {
   kEmpty,
   kBlack,
@@ -75,8 +73,6 @@ struct SymmetryPolicy {
   // (i.e. diagonal / rotated reflections).
   bool allow_reflection_rotations = false;
 };
-
-
 
 // State of an in-play game.
 class GomokuState : public State {

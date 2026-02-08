@@ -73,7 +73,7 @@ class GamesGomokuTest(parameterized.TestCase):
     state = game.new_initial_state()
     policy = state.get_symmetry_policy()
     print("policy", policy)
-    self.assertEqual(policy.allow_reflections, False, f"Wrong symmetry ploicy")
+    self.assertEqual(policy.allow_reflections, False, f"Wrong symmetry policy")
     # verify policy is correct here
     state.apply_action(0)
     state.apply_action(1)
@@ -81,7 +81,7 @@ class GamesGomokuTest(parameterized.TestCase):
     # set symmetry policy here
     policy.allow_reflections = True
     policy = state.get_symmetry_policy()
-    self.assertEqual(policy.allow_reflections, True, f"Wrong symmetry ploicy")
+    self.assertEqual(policy.allow_reflections, True, f"Wrong symmetry policy")
     sym12 = state.symmetric_hash()
 
     state = game.new_initial_state()
@@ -160,5 +160,4 @@ class GamesGomokuTest(parameterized.TestCase):
       self.assertEqual(hash1, hash2, f"Hash1 {hash1} Hash2 {hash2}")
 
 if __name__ == "__main__":
-  np.random.seed(87375711)
   absltest.main()

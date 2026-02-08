@@ -35,7 +35,6 @@ class Grid {
         data_(ComputeTotalSize(size, dims)) {
     SPIEL_CHECK_GE(size, 1);
     SPIEL_CHECK_GE(dims, 1);
-
     // stride[d] = size^(dims - d - 1)
     strides_[dims_ - 1] = 1;
     for (std::size_t i = dims_ - 1; i > 0; --i) {
