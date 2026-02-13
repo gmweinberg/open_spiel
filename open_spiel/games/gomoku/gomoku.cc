@@ -343,14 +343,56 @@ void GomokuState::ObservationTensor(Player player,
 }
 
 void GomokuState::UndoAction(Player player, Action move) {
-  board_.AtIndex(move) = Stone::kEmpty;
-  current_player_ = player;
-  move_count_ -= 1;
+  SPIEL_CHECK_FALSE(history_.empty());
+  Action old = history_.back().action;
   history_.pop_back();
+  board_.AtIndex(old) = Stone::kEmpty;
+  current_player_ = 1 - current_player_;
+  move_count_ -= 1;
+  terminal_ = false;
+  winning_line_.clear();
+  black_score_ = 0.0;
+  white_score_ = 0.0;
+  zobrist_hash_ = ComputeZobrist(board_);
 }
 
 std::unique_ptr<State> GomokuState::Clone() const {
   return std::unique_ptr<State>(new GomokuState(*this));
+}
+
+std::string GomokuState::Pretty() const {
+  using Coord = Grid<Stone>::Coord;
+  std::ostringstream oss;
+  if (dims_ == 2) {
+    for (int y = 0; y < size_; ++y) {
+      for (int x = 0; x < size_; ++x) {
+        Coord coord = {x, y};
+        Stone stone = board_.At(coord);
+        oss << StoneToChar(stone) << " ";
+      }
+      oss << '\n';
+    }
+    oss << '\n';
+  }
+  if (dims_ == 3) {
+    for (int z = 0; z < size_; ++z) {
+      for (int y = 0; y < size_; ++y) {
+        for (int x = 0; x < size_; ++x) {
+          Coord coord = {x, y, z};
+          Stone stone = board_.At(coord);
+          oss << StoneToChar(stone) << " ";
+        }
+        oss << '\n';
+      }
+      oss << '\n';
+      for (int i = 0; i <  size_; ++i) {
+         oss << "==";
+      }
+      oss << '\n';
+    }
+    oss << '\n';
+  }
+  return oss.str();
 }
 
 std::string GomokuGame::ActionToString(Player player,
