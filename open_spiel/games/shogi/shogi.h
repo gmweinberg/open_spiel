@@ -36,27 +36,11 @@
 // https://en.wikipedia.org/wiki/Crazyhouse
 //
 //
-// Parameters:
-//       "chess960"          bool  is it a Fischer Random game? (default: false)
-//       "insanity"          int   number of pocket pieces per capture (def: 1)
-//       "king_of_hill"      bool  is it King of the Hill?  (default: false)
-//       "sticky_promotions" bool  are promotions sticky?  (default: false)
-//
-// Usually in Crazyhouse a promoted piece reverts to a pawn when captured.
-// "Sticky promotions" means it stays promoted. The insanity parameter tells
-// how many copies of a captured piece you get in the pockets. Insanity of zero
-// is normal chess (so you can play normal king of the hill.
-// King of the Hill is a variant in which the objective is to occupy the four
-// central squares with a king (https://www.chess.com/terms/king-of-the-hill).
 
 namespace open_spiel {
 namespace shogi {
 
 // Constants.
-constexpr bool kDefaultChess960 = false;
-constexpr bool kDefaultStickyPromotions = false;
-constexpr bool kDefaultKingOfHill = false;
-constexpr int kDefaultInsanity = 1;
 
 inline constexpr int NumPlayers() { return 2; }
 inline constexpr double LossUtility() { return -1; }
@@ -66,8 +50,6 @@ inline constexpr double WinUtility() { return 1; }
 inline constexpr int kFirstDropAction = 4674;
 // because of our encoding NumDistinctActions includes impossible pawn drops
 inline constexpr int NumDistinctActions() { return kFirstDropAction + 5 * 64; }
-inline constexpr int kLeftCastlingAction = 4672;
-inline constexpr int kRightCastlingAction = 4673;
 
 // Keep the same value as for chess, nobody cares
 inline constexpr int MaxGameLength() { return 17695; }
@@ -76,8 +58,8 @@ inline const std::vector<int>& ObservationTensorShape() {
   static std::vector<int> shape{
       21 /* piece types * colours + empty */ + 1 /* repetition count */ +
           1 /* side to move */ + 1 /* irreversible move counter */ +
-          4 /* castling rights */ + 10 /* pockets */,
-      kMaxBoardSize, kMaxBoardSize};
+           + 10 /* pockets */,
+      kBoardSize, kBoardSize};
   return shape;
 }
 
@@ -116,32 +98,32 @@ inline void SetField(int offset, int length, uint8_t value, Action* action) {
   *action |= static_cast<Action>(value) << offset;
 }
 
-// Returns index (0 ... BoardSize*BoardSize-1) of a square
-// ({0, 0} ... {BoardSize-1, BoardSize-1}).
-inline uint8_t SquareToIndex(const Square& square, int board_size) {
-  return square.y * board_size + square.x;
+// Returns index (0 ... kNumSquares - 1) of a square
+// ({0, 0} ... {kBoardSize-1, kBoardSize-1}).
+inline uint8_t SquareToIndex(const Square& square) {
+  return square.y * kBoardSize + square.x;
 }
 
-// Returns square ({0, 0} ... {BoardSize-1, BoardSize-1}) from an index
-// (0 ... BoardSize*BoardSize-1).
-inline Square IndexToSquare(uint8_t index, int board_size) {
-  return Square{static_cast<int8_t>(index % board_size),
-                static_cast<int8_t>(index / board_size)};
+// Returns square ({0, 0} ... {kBoardSize-1, kBoardSize-1}) from an index
+// (0 ... kNumSquares - 1).
+inline Square IndexToSquare(uint8_t index) {
+  return Square{static_cast<int8_t>(index % kBoardSize),
+                static_cast<int8_t>(index / kBoardSize)};
 }
 
-int EncodeMove(const Square& from_square, int destination_index, int board_size,
+int EncodeMove(const Square& from_square, int destination_index, int kBoardSize,
                int num_actions_destinations);
 
 inline constexpr int kNumActionDestinations = 73;
 
-int8_t ReflectRank(Color to_play, int board_size, int8_t rank);
+int8_t ReflectRank(Color to_play, int kBoardSize, int8_t rank);
 
 Color PlayerToColor(Player p);
 
-std::pair<Square, int> ActionToDestination(int action, int board_size,
+std::pair<Square, int> ActionToDestination(int action, int kBoardSize,
                                            int num_actions_destinations);
 
-Action MoveToAction(const Move& move, int board_size = kDefaultBoardSize);
+Action MoveToAction(const Move& move);
 
 Move ActionToMove(const Action& action, const ShogiBoard& board);
 
@@ -162,7 +144,6 @@ class ShogiState : public State {
   std::vector<Action> LegalActions() const override;
   std::string ActionToString(Player player, Action action) const override;
   std::string ToString() const override;
-  ActionsAndProbs ChanceOutcomes() const override;  // for chess960
 
   bool IsTerminal() const override {
     return static_cast<bool>(MaybeFinalReturns());
@@ -181,7 +162,6 @@ class ShogiState : public State {
   // Current board.
   ShogiBoard& Board() { return current_board_; }
   const ShogiBoard& Board() const { return current_board_; }
-  int BoardSize() const { return current_board_.BoardSize(); }
 
   // Starting board.
   ShogiBoard& StartBoard() { return start_board_; }
@@ -280,28 +260,10 @@ class ShogiGame : public Game {
     return shogi::ObservationTensorShape();
   }
   int MaxGameLength() const override { return shogi::MaxGameLength(); }
-  int MaxChanceOutcomes() const override;  // for chess960
 
   std::unique_ptr<State> DeserializeState(
       const std::string& str) const override;
 
-  bool IsChess960() const { return chess960_; }
-
-  std::string Chess960LookupFEN(int index) const {
-    SPIEL_CHECK_GE(index, 0);
-    SPIEL_CHECK_LT(index, initial_fens_.size());
-    return initial_fens_[index];
-  }
-  int Insanity() const { return insanity_; }
-  bool StickyPromotions() const { return sticky_promotions_; }
-  bool KingOfHill() const { return king_of_hill_; }
-
- private:
-  bool chess960_;
-  bool sticky_promotions_;
-  bool king_of_hill_;
-  int insanity_;
-  std::vector<std::string> initial_fens_;  // Used for chess960.
 };
 
 }  // namespace shogi

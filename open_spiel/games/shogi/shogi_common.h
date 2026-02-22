@@ -25,6 +25,11 @@
 #include "open_spiel/abseil-cpp/absl/random/uniform_int_distribution.h"
 
 namespace open_spiel {
+namespace shogi {
+inline constexpr int kBoardSize = 9;
+inline constexpr int kNumSquares = 81;
+}  // shogi_common
+
 namespace shogi_common {
 
 struct Offset {
@@ -102,27 +107,23 @@ inline Square operator+(const Square& sq, const Offset& offset) {
 //  - [42, 55]: 14 left upward or right downward diagonal moves
 //  - [56, 63]:  8 knight moves
 int OffsetToDestinationIndex(const Offset& offset,
-                             const std::array<Offset, 8>& knight_offsets,
-                             int board_size);
+                             const std::array<Offset, 8>& knight_offsets);
 int OffsetToDestinationIndex(const Offset& offset,
-                             const std::array<Offset, 2>& knight_offsets,
-                             int board_size);
+                             const std::array<Offset, 2>& knight_offsets);
 
 // Inverse function of OffsetToDestinationIndex
 Offset DestinationIndexToOffset(int destination_index,
-                                const std::array<Offset, 8>& knight_offsets,
-                                int board_size);
+                                const std::array<Offset, 8>& knight_offsets);
 Offset DestinationIndexToOffset(int destination_index,
-                                const std::array<Offset, 2>& knight_offsets,
-                                int board_size);
+                                const std::array<Offset, 2>& knight_offsets);
 
 // Encoding is:
-// i = (x * board_size + y) * num_actions_destinations + destination_index
+// i = (x * kBoardSize + y) * num_actions_destinations + destination_index
 // where x,y are the square coordinates.
-std::pair<Square, int> DecodeNetworkTarget(int i, int board_size,
+std::pair<Square, int> DecodeNetworkTarget(int i, int kBoardSize,
                                            int num_actions_destinations);
 int EncodeNetworkTarget(const Square& from_square, int destination_index,
-                        int board_size, int num_actions_destinations);
+                        int kBoardSize, int num_actions_destinations);
 
 // n-dimensional array of uniform random numbers.
 // Example:

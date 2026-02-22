@@ -42,7 +42,7 @@ void CheckUndo(const char* fen, const char* move_san, const char* fen_after) {
 }
 
 
-void ApplyLANMove(const char* move_lan, ShogiState* state, bool chess960) {
+void ApplyLANMove(const char* move_lan, ShogiState* state) {
 }
 
 void BasicShogiTests() {

@@ -48,7 +48,7 @@ constexpr int kNumReversibleMovesToDraw = 100;
 constexpr int kNumRepetitionsToDraw = 3;
 
 // Facts about the game
-const GameType kGameType{
+const GameType kGameType {
     /*short_name=*/"shogi",
     /*long_name=*/"Shogi",
     GameType::Dynamics::kSequential,
@@ -63,10 +63,7 @@ const GameType kGameType{
     /*provides_observation_string=*/true,
     /*provides_observation_tensor=*/true,
     /*parameter_specification=*/
-    {{"chess960", GameParameter(kDefaultChess960)},
-     {"insanity", GameParameter(kDefaultInsanity)},
-     {"sticky_promotions", GameParameter(kDefaultStickyPromotions)},
-     {"king_of_hill", GameParameter(kDefaultKingOfHill)}}};
+    {{}}};
 
 std::shared_ptr<const Game> Factory(const GameParameters& params) {
   return std::shared_ptr<const Game>(new ShogiGame(params));
@@ -81,8 +78,8 @@ RegisterSingleTensorObserver single_tensor(kGameType.short_name);
 void AddPieceTypePlane(Color color, PieceType piece_type,
                        const ShogiBoard& board,
                        absl::Span<float>::iterator& value_it) {
-  for (int8_t y = 0; y < kMaxBoardSize; ++y) {
-    for (int8_t x = 0; x < kMaxBoardSize; ++x) {
+  for (int8_t y = 0; y < kBoardSize; ++y) {
+    for (int8_t x = 0; x < kBoardSize; ++x) {
       Piece piece_on_board = board.at(Square{x, y});
       *value_it++ =
           (piece_on_board.color == color && piece_on_board.type == piece_type
@@ -97,7 +94,7 @@ template <typename T>
 void AddScalarPlane(T val, T min, T max,
                     absl::Span<float>::iterator& value_it) {
   double normalized_val = static_cast<double>(val - min) / (max - min);
-  for (int i = 0; i < k2dMaxBoardSize; ++i) *value_it++ = normalized_val;
+  for (int i = 0; i < kNumSquares; ++i) *value_it++ = normalized_val;
 }
 
 // Adds a binary scalar plane.
@@ -109,15 +106,7 @@ void AddBinaryPlane(bool val, absl::Span<float>::iterator& value_it) {
 ShogiState::ShogiState(std::shared_ptr<const Game> game)
     : State(game) {
   const auto* g = ParentGame();
-  auto maybe_board = ShogiBoard::BoardFromFEN(
-      kDefaultStandardFEN,  // fen
-      8,                    // size
-      false,                // king in check allowed
-      false,                // allow pass move
-      g->Insanity(), g->StickyPromotions(), g->KingOfHill());
-  king_of_hill_ = g->KingOfHill();
-  start_board_ = *maybe_board;
-  current_board_ = start_board_;
+  auto maybe_board = ShogiBoard::BoardFromFEN(kDefaultStandardFEN);
   repetitions_[current_board_.HashValue()] = 1;
 }
 
@@ -126,11 +115,7 @@ ShogiState::ShogiState(std::shared_ptr<const Game> game,
     : State(game) {
   auto* g = static_cast<const ShogiGame*>(game.get());
   specific_initial_fen_ = fen;
-  int insanity = g->Insanity();
-  bool sticky_promotions = g->StickyPromotions();
-  king_of_hill_ = g->KingOfHill();
-  auto maybe_board = ShogiBoard::BoardFromFEN(
-      fen, 8, false, false, insanity, sticky_promotions, king_of_hill_);
+  auto maybe_board = ShogiBoard::BoardFromFEN(fen);
   SPIEL_CHECK_TRUE(maybe_board);
   start_board_ = *maybe_board;
   current_board_ = start_board_;
@@ -138,51 +123,19 @@ ShogiState::ShogiState(std::shared_ptr<const Game> game,
 }
 
 Player ShogiState::CurrentPlayer() const {
-  if (ParentGame()->IsChess960() && specific_initial_fen_.empty() &&
-      move_number_ == 0) {
-    return kChancePlayerId;
-  }
   return IsTerminal() ? kTerminalPlayerId : ColorToPlayer(Board().ToPlay());
 }
 
-ActionsAndProbs ShogiState::ChanceOutcomes() const {
-  SPIEL_CHECK_TRUE(ParentGame()->IsChess960());
-  // One chance outcome for each initial position in chess960.
-  ActionsAndProbs outcomes;
-  outcomes.reserve(960);
-  for (int i = 0; i < 960; ++i) {
-    outcomes.push_back({i, 1.0 / 960});
-  }
-  return outcomes;
-}
 
 Action ShogiState::ParseMoveToAction(const std::string& move_str) const {
-  bool chess960 = ParentGame()->IsChess960();
-  absl::optional<Move> move = Board().ParseMove(move_str, chess960);
+  absl::optional<Move> move = Board().ParseMove(move_str);
   if (!move.has_value()) {
     return kInvalidAction;
   }
-  return MoveToAction(*move, BoardSize());
+  return MoveToAction(*move);
 }
 
 void ShogiState::DoApplyAction(Action action) {
-  if (IsChanceNode()) {
-    SPIEL_CHECK_TRUE(ParentGame()->IsChess960());
-    // In chess960, there could be a chance node at the top of the game if the
-    // initial FEN is not passed in. So here we apply the initial position.
-    // First, reset the repetitions table.
-    repetitions_ = RepetitionTable();
-
-    // Then get the initial fen and set the board.
-    std::string fen = ParentGame()->Chess960LookupFEN(action);
-    auto maybe_board = ShogiBoard::BoardFromFEN(fen);
-    SPIEL_CHECK_TRUE(maybe_board);
-    start_board_ = *maybe_board;
-    current_board_ = start_board_;
-    repetitions_[current_board_.HashValue()] = 1;
-    cached_legal_actions_.reset();
-    return;
-  }
 
   Move move = ActionToMove(action, Board());
   moves_history_.push_back(move);
@@ -195,7 +148,7 @@ void ShogiState::MaybeGenerateLegalActions() const {
   if (!cached_legal_actions_) {
     cached_legal_actions_ = std::vector<Action>();
     Board().GenerateLegalMoves([this](const Move& move) -> bool {
-      cached_legal_actions_->push_back(MoveToAction(move, kMaxBoardSize));
+      cached_legal_actions_->push_back(MoveToAction(move));
       return true;
     });
     absl::c_sort(*cached_legal_actions_);
@@ -203,23 +156,20 @@ void ShogiState::MaybeGenerateLegalActions() const {
 }
 
 std::vector<Action> ShogiState::LegalActions() const {
-  if (IsChanceNode()) {
-    return LegalChanceOutcomes();
-  }  // chess960.
   MaybeGenerateLegalActions();
   if (IsTerminal()) return {};
   return *cached_legal_actions_;
 }
 
-int EncodeMove(const Square& from_square, int destination_index, int board_size,
+int EncodeMove(const Square& from_square, int destination_index,
                int num_actions_destinations) {
-  return (from_square.x * board_size + from_square.y) *
+  return (from_square.x * kBoardSize + from_square.y) *
              num_actions_destinations +
          destination_index;
 }
 
-int8_t ReflectRank(Color to_play, int board_size, int8_t rank) {
-  return to_play == Color::kBlack ? board_size - 1 - rank : rank;
+int8_t ReflectRank(Color to_play, int8_t rank) {
+  return to_play == Color::kBlack ? kBoardSize - 1 - rank : rank;
 }
 
 Color PlayerToColor(Player p) {
@@ -227,13 +177,13 @@ Color PlayerToColor(Player p) {
   return static_cast<Color>(p);
 }
 
-Action MoveToAction(const Move& move, int board_size) {
+Action MoveToAction(const Move& move) {
   // handle drop moves first
-  if (move.from.x == board_size) {
+  if (move.from.x == kBoardSize) {
     // piece_index is stored in m.from.y (0=Pawn ... 4=Queen)
     int piece_index = move.from.y;
-    int to_index = move.to.y * board_size + move.to.x;  // flatten 2D → 1D
-    int num_squares = board_size * board_size;
+    int to_index = move.to.y * kBoardSize + move.to.x;  // flatten 2D → 1D
+    int num_squares = kBoardSize * kBoardSize;
     int action_int = kFirstDropAction + piece_index * num_squares + to_index;
     return static_cast<Action>(action_int);
   }
@@ -241,23 +191,13 @@ Action MoveToAction(const Move& move, int board_size) {
   // Special-case for pass move.
   if (move == kPassMove) return kPassAction;
 
-  if (move.is_castling()) {
-    if (move.castle_dir == CastlingDirection::kLeft) {
-      return kLeftCastlingAction;
-    } else if (move.castle_dir == CastlingDirection::kRight) {
-      return kRightCastlingAction;
-    } else {
-      SpielFatalError("Invalid castling move.");
-    }
-  }
-
   Color color = move.piece.color;
   // We rotate the move to be from player p's perspective.
   Move player_move(move);
 
   // Rotate move to be from player p's perspective.
-  player_move.from.y = ReflectRank(color, board_size, player_move.from.y);
-  player_move.to.y = ReflectRank(color, board_size, player_move.to.y);
+  player_move.from.y = ReflectRank(color, kBoardSize, player_move.from.y);
+  player_move.to.y = ReflectRank(color, kBoardSize, player_move.to.y);
 
   // For each starting square, we enumerate 73 actions:
   // - 9 possible underpromotions
@@ -268,60 +208,19 @@ Action MoveToAction(const Move& move, int board_size) {
   // moves actually available from each starting square this could still be
   // reduced a little to 1816 indices.
   int starting_index =
-      EncodeMove(player_move.from, 0, kMaxBoardSize, kNumActionDestinations);
+      EncodeMove(player_move.from, 0, kBoardSize, kNumActionDestinations);
   int8_t x_diff = player_move.to.x - player_move.from.x;
   int8_t y_diff = player_move.to.y - player_move.from.y;
   Offset offset{x_diff, y_diff};
-  bool is_under_promotion = move.promotion_type != PieceType::kEmpty &&
-                            move.promotion_type != PieceType::kQueen;
-  if (is_under_promotion) {
-    // We have to indicate underpromotions as special moves, because in terms of
-    // from/to they are identical to queen promotions.
-    // For a given starting square, an underpromotion can have 3 possible
-    // destination squares (straight, left diagonal, right diagonal) and 3
-    // possible piece types.
-    SPIEL_CHECK_EQ(move.piece.type, PieceType::kPawn);
-    SPIEL_CHECK_TRUE((move.piece.color == color &&
-                      player_move.from.y == board_size - 2 &&
-                      player_move.to.y == board_size - 1) ||
-                     (move.piece.color == OppColor(color) &&
-                      player_move.from.y == 1 && player_move.to.y == 0));
-
-    int promotion_index;
-    {
-      auto itr = absl::c_find(kUnderPromotionIndexToType, move.promotion_type);
-      SPIEL_CHECK_TRUE(itr != kUnderPromotionIndexToType.end());
-      promotion_index = std::distance(kUnderPromotionIndexToType.begin(), itr);
-    }
-
-    int direction_index;
-    {
-      auto itr = absl::c_find_if(
-          kUnderPromotionDirectionToOffset,
-          [offset](Offset o) { return o.x_offset == offset.x_offset; });
-      SPIEL_CHECK_TRUE(itr != kUnderPromotionDirectionToOffset.end());
-      direction_index =
-          std::distance(kUnderPromotionDirectionToOffset.begin(), itr);
-    }
-    return starting_index +
-           kUnderPromotionDirectionToOffset.size() * promotion_index +
-           direction_index;
-  } else {
-    // For the normal moves, we simply encode starting and destination square.
-    int destination_index =
-        OffsetToDestinationIndex(offset, kKnightOffsets, kMaxBoardSize);
-    SPIEL_CHECK_TRUE(destination_index >= 0 && destination_index < 64);
-    return starting_index + kNumUnderPromotions + destination_index;
-  }
 }
 
-std::pair<Square, int> ActionToDestination(int action, int board_size,
+std::pair<Square, int> ActionToDestination(int action, int kBoardSize,
                                            int num_actions_destinations) {
   const int xy = action / num_actions_destinations;
   SPIEL_CHECK_GE(xy, 0);
-  SPIEL_CHECK_LT(xy, board_size * board_size);
-  const int8_t x = xy / board_size;
-  const int8_t y = xy % board_size;
+  SPIEL_CHECK_LT(xy, kBoardSize * kBoardSize);
+  const int8_t x = xy / kBoardSize;
+  const int8_t y = xy % kBoardSize;
   const int destination_index = action % num_actions_destinations;
   SPIEL_CHECK_GE(destination_index, 0);
   SPIEL_CHECK_LT(destination_index, num_actions_destinations);
@@ -335,23 +234,7 @@ Move ActionToMove(const Action& action, const ShogiBoard& board) {
   // Check for drop actions first
 
   if (action >= kFirstDropAction) {
-    int bs = board.BoardSize();
-    int num_squares = bs * bs;
-    int idx = static_cast<int>(action) - kFirstDropAction;
-
-    int piece_index = idx / num_squares;
-    int to_index = idx % num_squares;
-
-    Move m;
-    m.from = Square{// x = board_size → indicates drop
-                    // y = pieceIndex
-                    static_cast<int8_t>(bs), static_cast<int8_t>(piece_index)};
-
-    m.to = Square{static_cast<int8_t>(to_index % bs),
-                  static_cast<int8_t>(to_index / bs)};
-
-    // m.promotion = kNoPiece;
-    return m;
+		// TODO fix this
   }
 
   // Some chess variants (e.g. RBC) allow pass moves.
@@ -359,30 +242,12 @@ Move ActionToMove(const Action& action, const ShogiBoard& board) {
     return kPassMove;
   }
 
-  // Castle actions.
-  if (action == kLeftCastlingAction || action == kRightCastlingAction) {
-    Square king_square = board.find(Piece{board.ToPlay(), PieceType::kKing});
-    if (action == kLeftCastlingAction) {
-      return Move(king_square, Square{2, king_square.y},
-                  Piece{board.ToPlay(), PieceType::kKing}, PieceType::kEmpty,
-                  CastlingDirection::kLeft);
-    } else if (action == kRightCastlingAction) {
-      return Move(king_square, Square{6, king_square.y},
-                  Piece{board.ToPlay(), PieceType::kKing}, PieceType::kEmpty,
-                  CastlingDirection::kRight);
-    } else {
-      SpielFatalError("Invalid castling move.");
-    }
-  }
-
   // The encoded action represents an action encoded from color's perspective.
   Color color = board.ToPlay();
-  int board_size = board.BoardSize();
   PieceType promotion_type = PieceType::kEmpty;
-  CastlingDirection castle_dir = CastlingDirection::kNone;
 
   auto [from_square, destination_index] =
-      ActionToDestination(action, kMaxBoardSize, kNumActionDestinations);
+      ActionToDestination(action, kBoardSize, kNumActionDestinations);
   SPIEL_CHECK_LT(destination_index, kNumActionDestinations);
 
   bool is_under_promotion = destination_index < kNumUnderPromotions;
@@ -394,46 +259,35 @@ Move ActionToMove(const Action& action, const ShogiBoard& board) {
     offset = kUnderPromotionDirectionToOffset[direction_index];
   } else {
     destination_index -= kNumUnderPromotions;
-    offset = DestinationIndexToOffset(destination_index, kKnightOffsets,
-                                      kMaxBoardSize);
+    offset = DestinationIndexToOffset(destination_index, kKnightOffsets);
   }
   Square to_square = from_square + offset;
 
-  from_square.y = ReflectRank(color, board_size, from_square.y);
-  to_square.y = ReflectRank(color, board_size, to_square.y);
+  from_square.y = ReflectRank(color, kBoardSize, from_square.y);
+  to_square.y = ReflectRank(color, kBoardSize, to_square.y);
 
   // This uses the current state to infer the piece type.
   Piece piece = {board.ToPlay(), board.at(from_square).type};
 
-  // Check for queen promotion.
-  if (!is_under_promotion && piece.type == PieceType::kPawn &&
-      ReflectRank(color, board_size, from_square.y) == board_size - 2 &&
-      ReflectRank(color, board_size, to_square.y) == board_size - 1) {
-    promotion_type = PieceType::kQueen;
-  }
+	 // TODO fix this
+   Move move(from_square, to_square, piece);
 
-  Move move(from_square, to_square, piece, promotion_type, castle_dir);
+  // Move move(from_square, to_square, piece, promotion_type, castle_dir);
   return move;
 }
 
 std::string ShogiState::ActionToString(Player player,
                                             Action action) const {
-  if (player == kChancePlayerId) {
-    // Chess960 has an initial chance node.
-    SPIEL_CHECK_GE(action, 0);
-    SPIEL_CHECK_LT(action, 960);
-    return absl::StrCat("ChanceNodeOutcome_", action);
-  }
   Move move = ActionToMove(action, Board());
   return move.ToSAN(Board());
 }
 
 std::string ShogiState::DebugString() const {
-  return current_board_.DebugString(ParentGame()->IsChess960());
+  return current_board_.DebugString();
 }
 
 std::string ShogiState::ToString() const {
-  return Board().ToFEN(ParentGame()->IsChess960());
+  return Board().ToFEN();
 }
 
 std::vector<double> ShogiState::Returns() const {
@@ -482,24 +336,6 @@ void ShogiState::ObservationTensor(Player player,
   // Side to play.
   AddScalarPlane(ColorToPlayer(Board().ToPlay()), 0, 1, value_it);
 
-  // Irreversible move counter.
-  AddScalarPlane(Board().IrreversibleMoveCounter(), 0, 101, value_it);
-
-  // Castling rights.
-  AddBinaryPlane(Board().CastlingRight(Color::kWhite, CastlingDirection::kLeft),
-                 value_it);
-
-  AddBinaryPlane(
-      Board().CastlingRight(Color::kWhite, CastlingDirection::kRight),
-      value_it);
-
-  AddBinaryPlane(Board().CastlingRight(Color::kBlack, CastlingDirection::kLeft),
-                 value_it);
-
-  AddBinaryPlane(
-      Board().CastlingRight(Color::kBlack, CastlingDirection::kRight),
-      value_it);
-
   // Pocket pieces.
   // Order: Pawn, Knight, Bishop, Rook, Queen.
   // Maximum pocket count encoded in observation tensor.
@@ -524,7 +360,6 @@ std::unique_ptr<State> ShogiState::Clone() const {
 }
 
 void ShogiState::UndoAction(Player player, Action action) {
-  // Note: only supported after the chance node in Chess960.
   SPIEL_CHECK_GE(moves_history_.size(), 1);
   --repetitions_[current_board_.HashValue()];
   moves_history_.pop_back();
@@ -554,35 +389,18 @@ int ShogiState::NumRepetitions(const ShogiState& state) const {
 
 std::pair<std::string, std::vector<std::string>>
 ShogiState::ExtractFenAndMaybeMoves() const {
-  SPIEL_CHECK_FALSE(IsChanceNode());
-  std::string initial_fen = start_board_.ToFEN(ParentGame()->IsChess960());
+  std::string initial_fen = start_board_.ToFEN();
   std::vector<std::string> move_lans;
   std::unique_ptr<State> state = ParentGame()->NewInitialState(initial_fen);
   ShogiBoard board = down_cast<const ShogiState&>(*state).Board();
   for (const Move& move : moves_history_) {
-    move_lans.push_back(move.ToLAN(ParentGame()->IsChess960(), &board));
+    move_lans.push_back(move.ToLAN());
     board.ApplyMove(move);
   }
   return std::make_pair(initial_fen, move_lans);
 }
 
 absl::optional<std::vector<double>> ShogiState::MaybeFinalReturns() const {
-  if (king_of_hill_) {
-    auto next_to_play = ColorToPlayer(Board().ToPlay());
-    auto just_played = OtherPlayer(next_to_play);
-    Piece the_king = Piece{PlayerToColor(just_played), PieceType::kKing};
-    Square king_square = Board().find(the_king);
-
-    if (king_square.IsHillSquare()) {
-      std::vector<double> returns(NumPlayers());
-      returns[next_to_play] = LossUtility();
-      returns[just_played] = WinUtility();
-      return returns;
-    }
-  }
-  if (!Board().HasSufficientMaterial()) {
-    return std::vector<double>{DrawUtility(), DrawUtility()};
-  }
 
   if (IsRepetitionDraw()) {
     return std::vector<double>{DrawUtility(), DrawUtility()};
@@ -606,11 +424,6 @@ absl::optional<std::vector<double>> ShogiState::MaybeFinalReturns() const {
     }
   }
 
-  if (Board().IrreversibleMoveCounter() >= kNumReversibleMovesToDraw) {
-    // This is theoretically a draw that needs to be claimed, but we implement
-    // it as a forced draw for now.
-    return std::vector<double>{DrawUtility(), DrawUtility()};
-  }
 
   return absl::nullopt;
 }
@@ -627,18 +440,7 @@ std::string ShogiState::Serialize() const {
 }
 
 std::string ShogiState::StartFEN() const {
-  return start_board_.ToFEN(ParentGame()->IsChess960());
-}
-
-ShogiGame::ShogiGame(const GameParameters& params)
-    : Game(kGameType, params), chess960_(ParameterValue<bool>("chess960")) {
-  if (chess960_) {
-    initial_fens_ = chess::Chess960StartingPositions();
-    SPIEL_CHECK_EQ(initial_fens_.size(), 960);
-  }
-  insanity_ = ParameterValue<int>("insanity");
-  sticky_promotions_ = ParameterValue<bool>("sticky_promotions");
-  king_of_hill_ = ParameterValue<bool>("king_of_hill");
+  return start_board_.ToFEN();
 }
 
 std::unique_ptr<State> ShogiGame::DeserializeState(
@@ -666,14 +468,6 @@ std::unique_ptr<State> ShogiGame::DeserializeState(
     state->ApplyAction(action);
   }
   return state;
-}
-
-int ShogiGame::MaxChanceOutcomes() const {
-  if (IsChess960()) {
-    return 960;
-  } else {
-    return 0;
-  }
 }
 
 }  // namespace shogi

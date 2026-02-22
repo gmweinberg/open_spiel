@@ -52,10 +52,6 @@ inline std::ostream& operator<<(std::ostream& stream, Color c) {
   return stream << ColorToString(c);
 }
 
-enum class CastlingDirection { kLeft, kRight, kNone };
-
-int ToInt(CastlingDirection dir);
-
 enum class PieceType : int8_t {
   kEmpty = 0,
   kKing = 1,
@@ -126,12 +122,12 @@ inline std::string FileToString(int8_t file) {
 
 // Offsets for all possible knight moves.
 inline constexpr std::array<Offset, 8> kKnightOffsets = {
-    {{-2, -1}, {-2, 1}, {-1, -2}, {-1, 2}, {2, -1}, {2, 1}, {1, -2}, {1, 2}}};
+    {{-2, -1}, {-2, 1}, {2, -1}, {2, 1}}};
 
 absl::optional<Square> SquareFromString(const std::string& s);
 
 bool IsLongDiagonal(const shogi::Square& from_sq,
-                    const shogi::Square& to_sq, int board_size);
+                    const shogi::Square& to_sq);
 
 // Forward declare ShogiBoard here because it's needed in Move::ToSAN.
 class ShogiBoard;
@@ -140,86 +136,36 @@ struct Move {
   Square from;
   Square to;
   Piece piece;
-  PieceType promotion_type;
-  CastlingDirection castle_dir = CastlingDirection::kNone;
+  bool promote = false;
+  bool drop = false;
 
-  Move() : castle_dir(CastlingDirection::kNone) {}
+	Move() {};
+
   Move(const Square& from, const Square& to, const Piece& piece,
-       PieceType promotion_type = PieceType::kEmpty,
-       CastlingDirection castle_dir = CastlingDirection::kNone)
+       bool promote = false,
+       bool drop = false)
       : from(from),
         to(to),
         piece(piece),
-        promotion_type(promotion_type),
-        castle_dir(castle_dir) {}
+        promote(promote),
+        drop(drop) {}
 
   std::string ToString() const;
   // Crazyhouse does not support weird-sized boards.
   bool IsDropMove() const {
-    SPIEL_CHECK_LE(from.x, 8);
-    return from.x == 8;
+    return drop;
   }
 
   // Converts to long algebraic notation, as required by the UCI protocol.
-  // In the case of chess960, the castling move is converted to the format
-  // <king position> <rook position> it is castling with so it needs the board.
-  std::string ToLAN(bool chess960 = false,
-                    const ShogiBoard* board_ptr = nullptr) const;
+  std::string ToLAN() const;
 
-  // Converts to standard algebraic notation, as required by portable game
-  // notation (PGN). It is a chess move notation that is designed to be
-  // human-readable and concise.
-  //
-  // Unlike the LAN format, generating a SAN string requires the board the move
-  // is generated from.
-  //
-  // There are 3 types of SAN moves -
-  // 1. O-O (short castle)
-  // 2. O-O-O (long castle)
-  // 3. [piece type][from file][from rank][x][to square][=Promo][annotations]
-  //
-  // [piece type] is omitted for pawns
-  // [from file] is only included if 1) move is a pawn capture, or 2) it's
-  //     required for disambiguation (see below).
-  // [from rank] is only included if it's required for disambiguation.
-  // [x] is only included for captures
-  // [to square] is always included
-  // [=Promo] is only included for promotions ("=N", "=B", "=R", "=Q" depending
-  //     on type promoting to).
-  // [annotations] are a list of 0 or more characters added with different
-  //     meanings. The ones we care about are '+' for check, and '#' for
-  //     checkmate. All others are optional.
-  //
-  // Disambiguation:
-  // If a move is not uniquely-identified otherwise, file and/or rank of the
-  // from square is inserted to disambiguate. When either one will disambiguate,
-  // file should be used. If file is unique, file is used. Otherwise if rank is
-  // unique, rank is used. If neither is unique (this happens rarely, usually
-  // after under-promoting to a minor piece with both original pieces still
-  // intact, or double queen promotions with original queen still intact), both
-  // are used.
-  //
-  // Examples:
-  // * e4 (pawn to e4)
-  // * exd5 (pawn on file e capture the piece on d5)
-  // * Nf3 (knight to f3)
-  // * Nxd5 (knight captures piece on d5)
-  // * Bed5 (bishop on file e to d5)
-  // * B5xc3 (bishop on rank 5 capture piece on c3)
-  // * Ne5f7 (knight on e5 to f7, when there are 3 knights on the board, one on
-  //          e file, and one on 5th rank)
-  // * exd8=N#!! (pawn on e file capture piece on d8 and promote to knight
-  //              resulting in checkmate in a surprisingly good move)
-  // * O-O-O!!N+/- (a surprisingly good long castle that is a theoretical
-  //                novelty that gives white a clear but not winning advantage)
   std::string ToSAN(const ShogiBoard& board) const;
 
-  bool is_castling() const { return castle_dir != CastlingDirection::kNone; }
 
   bool operator==(const Move& other) const {
     return from == other.from && to == other.to && piece == other.piece &&
-           promotion_type == other.promotion_type &&
-           castle_dir == other.castle_dir;
+           promote == other.promote &&
+           drop == other.drop;
   }
 };
 
@@ -231,14 +177,11 @@ bool IsMoveCharacter(char c);
 
 std::pair<std::string, std::string> SplitAnnotations(const std::string& move);
 
-inline constexpr int kMaxBoardSize = 8;
-inline constexpr int kDefaultBoardSize = 8;
-inline constexpr int k2dMaxBoardSize = kMaxBoardSize * kMaxBoardSize;
 inline const std::string kDefaultStandardFEN =
     "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 inline const std::string kDefaultSmallFEN = "r1kr/pppp/PPPP/R1KR w - - 0 1";
 
-using ObservationTable = std::array<bool, k2dMaxBoardSize>;
+using ObservationTable = std::array<bool, kNumSquares>;
 
 // Specifies policy for pseudo legal moves generation.
 enum PseudoLegalMoveSettings {
@@ -286,51 +229,28 @@ class Pocket {
 
 class ShogiBoard {
  public:
-  ShogiBoard(int board_size = kDefaultBoardSize,
-                  bool king_in_check_allowed = false,
-                  bool allow_pass_move = false, int insanity = 1,
-                  bool sticky_promotions = false, bool king_of_hill = false);
-
   // Constructs a chess board at the given position in Forsyth-Edwards Notation.
   // https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation
+	ShogiBoard();
   static absl::optional<ShogiBoard> BoardFromFEN(
-      const std::string& fen, int board_size = 8,
-      bool king_in_check_allowed = false, bool allow_pass_move = false,
-      int insanity = 1, bool sticky_promotions = false,
-      bool king_of_hill = false);
+      const std::string& fen
+  );
 
   const Piece& at(Square sq) const { return board_[SquareToIndex_(sq)]; }
 
   void set_square(Square sq, Piece p);
 
-  const std::array<Piece, k2dMaxBoardSize>& pieces() const { return board_; }
+  const std::array<Piece, kNumSquares>& pieces() const { return board_; }
 
   Color ToPlay() const { return to_play_; }
   void SetToPlay(Color c);
 
-  Square EpSquare() const { return ep_square_; }
-  void SetEpSquare(Square sq);
-
-  int32_t IrreversibleMoveCounter() const { return irreversible_move_counter_; }
   int32_t Movenumber() const { return move_number_; }
 
-  absl::optional<Square> MaybeCastlingRookSquare(
-      Color side, CastlingDirection direction) const;
 
-  bool CastlingRight(Color color, CastlingDirection dir) const {
-    return MaybeCastlingRookSquare(color, dir).has_value();
-  }
-
-  char ShredderCastlingRightChar(Color color, CastlingDirection dir) const;
-
-  void SetCastlingRight(Color side, CastlingDirection direction,
-                        absl::optional<Square> maybe_rook_square);
-
-  void AddToPocket(Color owner, PieceType piece, int count);
+  void AddToPocket(Color owner, PieceType piece);
 
   void RemoveFromPocket(Color owner, PieceType piece);
-
-  Square FindRookForCastling(Color color, CastlingDirection dir) const;
 
   // Find the location of any one piece of the given type, or kInvalidSquare.
   Square find(const Piece& piece) const;
@@ -384,24 +304,9 @@ class ShogiBoard {
     return found;
   }
 
-  // Does either side have sufficient material to mate?
-  // FIDE rules say it must be impossible to mate even with "most unskilled"
-  // counterplay. This would technically include things like pawns blocking
-  // either side from making progress.
-  // Eg. "8/4k3/8/p1p1p1p1/P1P1P1P1/8/4K3/8 w - -".
-  // However, detecting all such positions will require solving chess... so
-  // we detect a more generally-accepted subset of positions - those with the
-  // following material combinations:
-  // 1. K vs K
-  // 2. K+B vs K
-  // 3. K+N vs K
-  // 4. K+B* vs K+B* (all bishops on same coloured squares)
-  bool HasSufficientMaterial() const;
-
   // Parses a move in standard algebraic notation or long algebraic notation
   // (see below). Returns absl::nullopt on failure.
-  absl::optional<Move> ParseMove(const std::string& move,
-                                 bool chess960 = false) const;
+  absl::optional<Move> ParseMove(const std::string& move) const;
 
   // For both LAN and SAN we first check for a drop move with syntax like N@d4
   // All drop moves are shown with a drop syntax, so Nd4 always mean a knight
@@ -410,15 +315,13 @@ class ShogiBoard {
   // Parses a move in standard algebraic notation as defined by FIDE.
   // https://en.wikipedia.org/wiki/Algebraic_notation_(chess).
   // Returns absl::nullopt on failure.
-  absl::optional<Move> ParseSANMove(const std::string& move) const;
 
   // Parses a move in long algebraic notation.
   // Long algebraic notation is not standardized and there are many variants,
   // but the one we care about is of the form "e2e4" and "f7f8q". This is the
   // form used by chess engine text protocols that are of interest to us.
   // Returns absl::nullopt on failure.
-  absl::optional<Move> ParseLANMove(const std::string& move,
-                                    bool chess960 = false) const;
+  absl::optional<Move> ParseLANMove(const std::string& move) const;
 
   void ApplyMove(const Move& move);
 
@@ -428,7 +331,7 @@ class ShogiBoard {
   bool TestApplyMove(const Move& move);
 
   bool InBoardArea(const Square& sq) const {
-    return sq.x >= 0 && sq.x < board_size_ && sq.y >= 0 && sq.y < board_size_;
+    return sq.x >= 0 && sq.x < kBoardSize && sq.y >= 0 && sq.y < kBoardSize;
   }
 
   bool IsEmpty(const Square& sq) const {
@@ -454,13 +357,13 @@ class ShogiBoard {
   /* Whether the square is on the pawn starting rank for our_color. */
   bool IsPawnStartingRank(const Square& sq, Color our_color) const {
     return ((our_color == Color::kWhite && sq.y == 1) ||
-            (our_color == Color::kBlack && sq.y == (board_size_ - 2)));
+            (our_color == Color::kBlack && sq.y == (kBoardSize - 2)));
   }
 
   bool IsPawnPromotionRank(const Square& sq) const {
     // No need to test for color here because a pawn can't be on the "wrong"
     // promotion rank.
-    return sq.y == 0 || sq.y == (board_size_ - 1);
+    return sq.y == 0 || sq.y == (kBoardSize - 1);
   }
 
   /* Whether the sq is under attack by the opponent. */
@@ -470,8 +373,6 @@ class ShogiBoard {
     return UnderAttack(find(Piece{to_play_, PieceType::kKing}), to_play_);
   }
 
-  int BoardSize() const { return board_size_; }
-
   bool KingInCheckAllowed() const { return king_in_check_allowed_; }
 
   bool AllowPassMove() const { return allow_pass_move_; }
@@ -480,33 +381,16 @@ class ShogiBoard {
 
   std::string DebugString(bool shredder_fen = false) const;
 
-  std::string ToUnicodeString() const;
-
   // Constructs a string describing the chess board position in Forsyth-Edwards
   // Notation. https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation
   // Modified to support promoted and pocket pieces.
   std::string ToFEN(bool shredder = false) const;
 
-  /* Constructs a string describing the dark chess board position in a notation
-   * similar to Forsyth-Edwards Notation.
-   * https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation
-   *
-   * There are several key differences to FEN:
-   * 1) Only observable squares are shown. Squares invisible to the observer are
-   *    represented by the character '?'
-   * 2) Only observer's castling rights are shown
-   * 3) en passant square is only shown if the observer is capable of performing
-   *    an en passant capture
-   *
-   */
-  std::string ToDarkFEN(const ObservationTable& observability_table,
-                        Color color) const;
-
   bool IsBreachingMove(Move move) const;
   void BreachingMoveToCaptureMove(Move* move) const;
 
  private:
-  size_t SquareToIndex_(Square sq) const { return sq.y * board_size_ + sq.x; }
+  size_t SquareToIndex_(Square sq) const { return sq.y * kBoardSize + sq.x; }
 
   /* Generate*Destinations functions call yield(sq) for every potential
    * destination generated.
@@ -530,21 +414,9 @@ class ShogiBoard {
    * duplicate move generator.
    */
 
-  // King moves without castling.
   template <typename YieldFn>
   void GenerateKingDestinations_(Square sq, Color color,
                                  const YieldFn& yield) const;
-
-  template <typename YieldFn>
-  void GenerateCastlingDestinations_(Square sq, Color color,
-                                     PseudoLegalMoveSettings settings,
-                                     const YieldFn& yield) const;
-  bool CanCastle(Square king_sq, Color color,
-                 PseudoLegalMoveSettings settings) const;
-  bool CanCastleBetween(Square from_sq, Square to_sq,
-                        bool check_safe_from_opponent,
-                        PseudoLegalMoveSettings settings,
-                        Square exception_sq = kInvalidSquare) const;
 
   template <typename YieldFn>
   void GenerateQueenDestinations_(Square sq, Color color,
@@ -589,34 +461,19 @@ class ShogiBoard {
                                  const PseudoLegalMoveSettings& settings,
                                  const YieldFn& yield) const;
 
-  void SetIrreversibleMoveCounter(int c);
   void SetMovenumber(int move_number);
-  bool EpSquareThreatened(Square ep_square) const;
 
-  int board_size_;
   bool king_in_check_allowed_;
   bool allow_pass_move_;
 
-  std::array<Piece, k2dMaxBoardSize> board_;
+  std::array<Piece, kNumSquares> board_;
   Color to_play_;
-  Square ep_square_;
-  int32_t irreversible_move_counter_;
 
   // This starts at 1, and increments after each black move (a "full move" in
   // chess is a "half move" by white followed by a "half move" by black).
   int32_t move_number_;
 
-  // Set to the square of the rook if castling is still possible in that
-  // direction, otherwise nullopt.
-  struct {
-    absl::optional<Square> left_castle;   // -x direction, AKA long castle
-    absl::optional<Square> right_castle;  // +x direction, AKA short castle
-  } castling_rights_[2];
-
   uint64_t zobrist_hash_;
-  int insanity_;
-  bool sticky_promotions_;
-  bool king_of_hill_ = false;
 };
 
 inline std::ostream& operator<<(std::ostream& stream,
@@ -628,7 +485,7 @@ inline std::ostream& operator<<(std::ostream& stream, const PieceType& pt) {
   return stream << PieceTypeToString(pt);
 }
 
-std::string DefaultFen(int board_size);
+std::string DefaultFen();
 
 }  // namespace shogi
 }  // namespace open_spiel

@@ -24,43 +24,44 @@
 
 namespace open_spiel {
 namespace shogi_common {
+using shogi::kBoardSize;
+using shogi::kNumSquares;
 namespace {
 
-int DiffToDestinationIndex(int diff, int board_size) {
-  int destination_index = diff + board_size - 1;
+int DiffToDestinationIndex(int diff) {
+  int destination_index = diff + kBoardSize - 1;
   if (diff > 0) --destination_index;
   return destination_index;
 }
 
-int DestinationIndexToDiff(int destination_index, int board_size) {
-  int diff = destination_index - board_size + 1;
+int DestinationIndexToDiff(int destination_index) {
+  int diff = destination_index - kBoardSize + 1;
   if (diff >= 0) ++diff;
   return diff;
 }
 
 template <typename KnightOffsets>
 int OffsetToDestinationIndexImpl(const Offset& offset,
-                                 const KnightOffsets& knight_offsets,
-                                 int board_size) {
+                                 const KnightOffsets& knight_offsets) {
   // Encodes chess queen moves + knight moves.
   int move_type = -1;
   int destination_index = -1;
   if (offset.x_offset == 0) {
     // vertical moves
     move_type = 0;
-    destination_index = DiffToDestinationIndex(offset.y_offset, board_size);
+    destination_index = DiffToDestinationIndex(offset.y_offset);
   } else if (offset.y_offset == 0) {
     // horizontal moves
     move_type = 1;
-    destination_index = DiffToDestinationIndex(offset.x_offset, board_size);
+    destination_index = DiffToDestinationIndex(offset.x_offset);
   } else if (offset.x_offset == offset.y_offset) {
     // left downward or right upward diagonal moves.
     move_type = 2;
-    destination_index = DiffToDestinationIndex(offset.x_offset, board_size);
+    destination_index = DiffToDestinationIndex(offset.x_offset);
   } else if (offset.x_offset == -offset.y_offset) {
     // left upward or right downward diagonal moves.
     move_type = 3;
-    destination_index = DiffToDestinationIndex(offset.x_offset, board_size);
+    destination_index = DiffToDestinationIndex(offset.x_offset);
   } else {
     // knight moves.
     move_type = 4;
@@ -74,16 +75,15 @@ int OffsetToDestinationIndexImpl(const Offset& offset,
     }
   }
 
-  return move_type * 2 * (board_size - 1) + destination_index;
+  return move_type * 2 * (kBoardSize - 1) + destination_index;
 }
 
 template <typename KnightOffsets>
 Offset DestinationIndexToOffsetImpl(int destination_index,
-                                    const KnightOffsets& knight_offsets,
-                                    int board_size) {
-  int move_type = destination_index / (2 * (board_size - 1));
-  destination_index = destination_index % (2 * (board_size - 1));
-  int8_t diff = DestinationIndexToDiff(destination_index, board_size);
+                                    const KnightOffsets& knight_offsets) {
+  int move_type = destination_index / (2 * (kBoardSize - 1));
+  destination_index = destination_index % (2 * (kBoardSize - 1));
+  int8_t diff = DestinationIndexToDiff(destination_index);
 
   if (move_type == 0) {
     return {0, diff};
@@ -105,38 +105,32 @@ Offset DestinationIndexToOffsetImpl(int destination_index,
 }  // namespace
 
 int OffsetToDestinationIndex(const Offset& offset,
-                             const std::array<Offset, 8>& knight_offsets,
-                             int board_size) {
-  return OffsetToDestinationIndexImpl(offset, knight_offsets, board_size);
+                             const std::array<Offset, 8>& knight_offsets) {
+  return OffsetToDestinationIndexImpl(offset, knight_offsets);
 }
 
 int OffsetToDestinationIndex(const Offset& offset,
-                             const std::array<Offset, 2>& knight_offsets,
-                             int board_size) {
-  return OffsetToDestinationIndexImpl(offset, knight_offsets, board_size);
+                             const std::array<Offset, 2>& knight_offsets) {
+  return OffsetToDestinationIndexImpl(offset, knight_offsets);
 }
 
 Offset DestinationIndexToOffset(int destination_index,
-                                const std::array<Offset, 8>& knight_offsets,
-                                int board_size) {
-  return DestinationIndexToOffsetImpl(destination_index, knight_offsets,
-                                      board_size);
+                                const std::array<Offset, 8>& knight_offsets) {
+  return DestinationIndexToOffsetImpl(destination_index, knight_offsets);
 }
 
 Offset DestinationIndexToOffset(int destination_index,
-                                const std::array<Offset, 2>& knight_offsets,
-                                int board_size) {
-  return DestinationIndexToOffsetImpl(destination_index, knight_offsets,
-                                      board_size);
+                                const std::array<Offset, 2>& knight_offsets) {
+  return DestinationIndexToOffsetImpl(destination_index, knight_offsets);
 }
 
-std::pair<Square, int> DecodeNetworkTarget(int i, int board_size,
+std::pair<Square, int> DecodeNetworkTarget(int i,
                                            int num_actions_destinations) {
   int xy = i / num_actions_destinations;
   SPIEL_CHECK_GE(xy, 0);
-  SPIEL_CHECK_LT(xy, board_size * board_size);
-  int8_t x = xy / board_size;
-  int8_t y = xy % board_size;
+  SPIEL_CHECK_LT(xy, kNumSquares);
+  int8_t x = xy / kBoardSize;
+  int8_t y = xy % kBoardSize;
   int destination_index = i % num_actions_destinations;
   SPIEL_CHECK_GE(destination_index, 0);
   SPIEL_CHECK_LT(destination_index, num_actions_destinations);
@@ -144,8 +138,8 @@ std::pair<Square, int> DecodeNetworkTarget(int i, int board_size,
 }
 
 int EncodeNetworkTarget(const Square& from_square, int destination_index,
-                        int board_size, int num_actions_destinations) {
-  return (from_square.x * board_size + from_square.y) *
+                        int num_actions_destinations) {
+  return (from_square.x * kBoardSize + from_square.y) *
              num_actions_destinations +
          destination_index;
 }
