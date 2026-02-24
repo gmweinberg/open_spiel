@@ -55,21 +55,31 @@ inline std::ostream& operator<<(std::ostream& stream, Color c) {
 enum class PieceType : int8_t {
   kEmpty = 0,
   kKing = 1,
-  kQueen = 2,
-  kRook = 3,
-  kBishop = 4,
-  kKnight = 5,
-  kPawn = 6,
-  kQueenP = 7,
-  kRookP = 8,
-  kBishopP = 9,
-  kKnightP = 10
+	kLance = 2,
+	kKnight = 3,
+	KSilver = 4,
+	kGold = 5,
+	kPawn = 6,
+	kBishop = 7,
+	kRook = 8,
+	kLanceP = 9,
+	kKnightP = 10,
+	kSilver = 11,
+	kPawnP = 12,
+	kBishopP = 13,
+	kRookP = 14,
+  kQueen = 15, // TODO get rid of this
 };
 
 static inline constexpr std::array<PieceType, 10> kPieceTypes = {
-    {PieceType::kKing, PieceType::kQueen, PieceType::kRook, PieceType::kBishop,
-     PieceType::kKnight, PieceType::kPawn, PieceType::kQueenP,
-     PieceType::kRookP, PieceType::kBishopP, PieceType::kKnightP}};
+    {PieceType::kKing, PieceType::kLance, PieceType::kKnight,
+		PieceType::kSilver, PieceType::kGold, PieceType::kPawn,
+		PieceType::kBishop, PieceType::kRook,  PieceType::kLanceP,
+		PieceType::kKnightP, PieceType::kPawnP, PieceType::kBishopP,
+		PieceType::kRookP}};
+
+PieceType PromotedType(PieceType type);
+PieceType UnpromotedType(PieceType type);
 
 // Tries to parse piece type from char ('K', 'Q', 'R', 'B', 'N', 'P').
 // Case-insensitive.
@@ -126,11 +136,6 @@ inline constexpr std::array<Offset, 8> kKnightOffsets = {
 
 absl::optional<Square> SquareFromString(const std::string& s);
 
-bool IsLongDiagonal(const shogi::Square& from_sq,
-                    const shogi::Square& to_sq);
-
-// Forward declare ShogiBoard here because it's needed in Move::ToSAN.
-class ShogiBoard;
 
 struct Move {
   Square from;
@@ -151,7 +156,6 @@ struct Move {
         drop(drop) {}
 
   std::string ToString() const;
-  // Crazyhouse does not support weird-sized boards.
   bool IsDropMove() const {
     return drop;
   }
@@ -202,12 +206,17 @@ inline constexpr open_spiel::Action kPassAction = 0;
 inline const shogi::Move kPassMove = Move(
     Square{-1, -1}, Square{-1, -1}, Piece{Color::kEmpty, PieceType::kEmpty});
 
+int PocketIndex(PieceType ptype);
+
+PieceType PocketPieceType(int index);
+
 class Pocket {
  public:
   // Iteration support
-  static constexpr std::array<PieceType, 5> PieceTypes() {
-    return {PieceType::kPawn, PieceType::kKnight, PieceType::kBishop,
-            PieceType::kRook, PieceType::kQueen};
+  static constexpr std::array<PieceType, 7> PieceTypes() {
+    kBoardSize return {PieceType::kPawn, PieceType::kLance, PieceType::kKnight,
+			      PieceType::kSilver, PieceType::kGold, PieceType::kBishop,
+            PieceType::kRook};
   }
 
   // Modifiers
@@ -219,11 +228,10 @@ class Pocket {
 
   // Move encoding
   static std::size_t Index(PieceType ptype);
-  static PieceType DropPieceType(int y);
 
  private:
-  static constexpr std::size_t kNumPocketPieces = 5;
-  // Internal storage: Pawn, Knight, Bishop, Rook, Queen
+  static constexpr std::size_t kNumPocketPieces = 7;
+  // Internal storage: Pawn, Lance
   std::array<int, kNumPocketPieces> counts_{};
 };
 
@@ -255,28 +263,12 @@ class ShogiBoard {
   // Find the location of any one piece of the given type, or kInvalidSquare.
   Square find(const Piece& piece) const;
 
-  // Pseudo-legal moves are moves that may leave the king in check, but are
-  // otherwise legal.
-  // The generation functions call yield(move) for each move generated.
-  // The yield function should return whether generation should continue.
-  // For performance reasons, we do not guarantee that no more moves will be
-  // generated if yield returns false. It is only for optimization.
   using MoveYieldFn = std::function<bool(const Move&)>;
   void GenerateLegalMoves(const MoveYieldFn& yield) const {
     GenerateLegalMoves(yield, to_play_);
   }
   void GenerateLegalMoves(const MoveYieldFn& yield, Color color) const;
-  void GeneratePseudoLegalMoves(
-      const MoveYieldFn& yield, Color color,
-      PseudoLegalMoveSettings settings =
-          PseudoLegalMoveSettings::kAcknowledgeEnemyPieces) const;
 
-  // Optimization for computing number of pawn tries for kriegspiel
-  void GenerateLegalPawnCaptures(const MoveYieldFn& yield, Color color) const;
-  void GeneratePseudoLegalPawnCaptures(
-      const MoveYieldFn& yield, Color color,
-      PseudoLegalMoveSettings settings =
-          PseudoLegalMoveSettings::kAcknowledgeEnemyPieces) const;
 
   // counts of pocket pieces by type
   // Pawn, Knight, Bishop, Rook, Queen
@@ -484,6 +476,10 @@ inline std::ostream& operator<<(std::ostream& stream,
 inline std::ostream& operator<<(std::ostream& stream, const PieceType& pt) {
   return stream << PieceTypeToString(pt);
 }
+
+bool StuckPiece(Color player, PieceType ptype, int8_t y);
+
+bool InPromoZone(Color player, int8_t y);
 
 std::string DefaultFen();
 

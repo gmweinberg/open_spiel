@@ -178,102 +178,40 @@ Color PlayerToColor(Player p) {
 }
 
 Action MoveToAction(const Move& move) {
-  // handle drop moves first
-  if (move.from.x == kBoardSize) {
-    // piece_index is stored in m.from.y (0=Pawn ... 4=Queen)
-    int piece_index = move.from.y;
-    int to_index = move.to.y * kBoardSize + move.to.x;  // flatten 2D → 1D
-    int num_squares = kBoardSize * kBoardSize;
-    int action_int = kFirstDropAction + piece_index * num_squares + to_index;
-    return static_cast<Action>(action_int);
-  }
-
-  // Special-case for pass move.
-  if (move == kPassMove) return kPassAction;
-
-  Color color = move.piece.color;
-  // We rotate the move to be from player p's perspective.
-  Move player_move(move);
-
-  // Rotate move to be from player p's perspective.
-  player_move.from.y = ReflectRank(color, kBoardSize, player_move.from.y);
-  player_move.to.y = ReflectRank(color, kBoardSize, player_move.to.y);
-
-  // For each starting square, we enumerate 73 actions:
-  // - 9 possible underpromotions
-  // - 56 queen moves
-  // - 8 knight moves
-  // In total, this results in 64 * 73 = 4672 indices.
-  // This is the union of all possible moves, by reducing this to the number of
-  // moves actually available from each starting square this could still be
-  // reduced a little to 1816 indices.
-  int starting_index =
-      EncodeMove(player_move.from, 0, kBoardSize, kNumActionDestinations);
-  int8_t x_diff = player_move.to.x - player_move.from.x;
-  int8_t y_diff = player_move.to.y - player_move.from.y;
-  Offset offset{x_diff, y_diff};
+	if (move.drop){
+		int piece_index = PocketIndex(move.piece.type);
+		int action_int =  kNumBoardMoves + piece_index * kNumSquares
+			+ move.to.Index();
+		return static_cast<Action>(action_int);
+	}
+	int promo = move.promote ? 1 : 0;
+	int action_int = (move.from.Index() * kNumSquares + move.to.Index()) * 2
+		+ promo;
+	return static_cast<Action>(action_int);
 }
 
-std::pair<Square, int> ActionToDestination(int action, int kBoardSize,
-                                           int num_actions_destinations) {
-  const int xy = action / num_actions_destinations;
-  SPIEL_CHECK_GE(xy, 0);
-  SPIEL_CHECK_LT(xy, kBoardSize * kBoardSize);
-  const int8_t x = xy / kBoardSize;
-  const int8_t y = xy % kBoardSize;
-  const int destination_index = action % num_actions_destinations;
-  SPIEL_CHECK_GE(destination_index, 0);
-  SPIEL_CHECK_LT(destination_index, num_actions_destinations);
-  return {Square{x, y}, destination_index};
-}
+Move ActionToMove(Action action, const ShogiBoard& board) {
+	if (action < kNumBoardMoves) {
+		bool promo = (action % 2 == 1);
+		action /= 2;
+		int to = action % kNumSquares;
+		Square to_square = Square{to % kNumSquares, to / kNumSquares};
+		int from = action / kNumSquares;
+		Square from_square = Square{from % kNumSquares, from / kNumSquares};
+		Piece piece = {board.ToPlay(), board.at(from_square).type};
+		SPIEL_CHECK_NE(board.at(from_square).type, PieceType::kEmpty);
+		return Move(from_square, to_square, piece, promo);
+	} else {
+		action -= kNumBoardMoves;
+		Square from_square = Square{-1, -1}; // dummy value for drops
 
-Move ActionToMove(const Action& action, const ShogiBoard& board) {
-  SPIEL_CHECK_GE(action, 0);
-  SPIEL_CHECK_LT(action, NumDistinctActions());
-
-  // Check for drop actions first
-
-  if (action >= kFirstDropAction) {
-		// TODO fix this
-  }
-
-  // Some chess variants (e.g. RBC) allow pass moves.
-  if (board.AllowPassMove() && action == kPassAction) {
-    return kPassMove;
-  }
-
-  // The encoded action represents an action encoded from color's perspective.
-  Color color = board.ToPlay();
-  PieceType promotion_type = PieceType::kEmpty;
-
-  auto [from_square, destination_index] =
-      ActionToDestination(action, kBoardSize, kNumActionDestinations);
-  SPIEL_CHECK_LT(destination_index, kNumActionDestinations);
-
-  bool is_under_promotion = destination_index < kNumUnderPromotions;
-  Offset offset;
-  if (is_under_promotion) {
-    int promotion_index = destination_index / 3;
-    int direction_index = destination_index % 3;
-    promotion_type = kUnderPromotionIndexToType[promotion_index];
-    offset = kUnderPromotionDirectionToOffset[direction_index];
-  } else {
-    destination_index -= kNumUnderPromotions;
-    offset = DestinationIndexToOffset(destination_index, kKnightOffsets);
-  }
-  Square to_square = from_square + offset;
-
-  from_square.y = ReflectRank(color, kBoardSize, from_square.y);
-  to_square.y = ReflectRank(color, kBoardSize, to_square.y);
-
-  // This uses the current state to infer the piece type.
-  Piece piece = {board.ToPlay(), board.at(from_square).type};
-
-	 // TODO fix this
-   Move move(from_square, to_square, piece);
-
-  // Move move(from_square, to_square, piece, promotion_type, castle_dir);
-  return move;
+		int to = action % 81;
+		int piece_index = action / 81;
+		Square to_square = Square{to % kNumSquares, to / kNumSquares};
+		PieceType ptype = PocketPieceType(piece_index);
+		Piece piece = {board.ToPlay(), ptype};
+		return Move(from_square, to_square, piece, false, true);
+	}
 }
 
 std::string ShogiState::ActionToString(Player player,

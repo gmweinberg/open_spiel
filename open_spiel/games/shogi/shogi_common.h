@@ -26,8 +26,10 @@
 
 namespace open_spiel {
 namespace shogi {
-inline constexpr int kBoardSize = 9;
-inline constexpr int kNumSquares = 81;
+constexpr int kBoardSize = 9;
+constexpr int kNumSquares = 81;
+constexpr int kNumBoardMoves = 81 * 81 * 2;
+constexpr int kNumDropMoves  = 7 * 81;
 }  // shogi_common
 
 namespace shogi_common {
@@ -72,7 +74,9 @@ struct Square {
     return s;
   }
 
-  bool IsHillSquare() const { return (x == 3 || x == y) && (y == 3 || y == 4); }
+	int Index() const {
+		return y * kBoardSize + x;
+	}
 
   int8_t x;
   int8_t y;

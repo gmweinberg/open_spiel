@@ -125,7 +125,7 @@ std::pair<Square, int> ActionToDestination(int action, int kBoardSize,
 
 Action MoveToAction(const Move& move);
 
-Move ActionToMove(const Action& action, const ShogiBoard& board);
+Move ActionToMove(Action action, const ShogiBoard& board);
 
 // State of an in-play game.
 class ShogiState : public State {
