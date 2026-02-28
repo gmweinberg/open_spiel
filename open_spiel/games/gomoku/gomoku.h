@@ -116,6 +116,7 @@ class GomokuState : public State {
                          absl::Span<float> values) const override;
   std::unique_ptr<State> Clone() const override;
   std::vector<Action> LegalActions() const override;
+	void UndoAction(Player player, Action action) override;
   uint64_t HashValue() const;
   void SetSymmetryPolicy(const SymmetryPolicy& policy) {
     symmetry_policy_ = policy;
