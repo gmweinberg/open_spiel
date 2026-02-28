@@ -379,6 +379,9 @@ std::string ShogiState::StartSFEN() const {
   return start_board_.ToSFEN();
 }
 
+ShogiGame::ShogiGame(const GameParameters& params)
+    : Game(kGameType, params) {}
+
 std::unique_ptr<State> ShogiGame::DeserializeState(
     const std::string& str) const {
   const std::string prefix("SFEN: ");
