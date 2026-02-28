@@ -28,37 +28,37 @@
 namespace py = ::pybind11;
 using open_spiel::Game;
 using open_spiel::State;
+using open_spiel::crazyhouse::Color;
+using open_spiel::crazyhouse::CrazyhouseBoard;
 using open_spiel::crazyhouse::CrazyhouseGame;
 using open_spiel::crazyhouse::CrazyhouseState;
-using open_spiel::crazyhouse::CrazyhouseBoard;
-using open_spiel::crazyhouse::Color;
-using open_spiel::crazyhouse::Square;
+using open_spiel::crazyhouse::Move;
 using open_spiel::crazyhouse::Piece;
 using open_spiel::crazyhouse::PieceType;
-using open_spiel::crazyhouse::Move;
+using open_spiel::crazyhouse::Square;
 
 void open_spiel::init_pyspiel_games_crazyhouse(py::module& m) {
   py::module_ crazyhouse = m.def_submodule("crazyhouse");
 
   py::enum_<Color>(crazyhouse, "Color")
-    .value("BLACK", Color::kBlack)
-    .value("WHITE", Color::kWhite)
-    .value("EMPTY", Color::kEmpty)
-    .export_values();
+      .value("BLACK", Color::kBlack)
+      .value("WHITE", Color::kWhite)
+      .value("EMPTY", Color::kEmpty)
+      .export_values();
 
   py::enum_<PieceType>(crazyhouse, "PieceType")
-    .value("EMPTY", PieceType::kEmpty)
-    .value("KING", PieceType::kKing)
-    .value("QUEEN", PieceType::kQueen)
-    .value("ROOK", PieceType::kRook)
-    .value("BISHOP", PieceType::kBishop)
-    .value("KNIGHT", PieceType::kKnight)
-    .value("PAWN", PieceType::kPawn)
-    .value("QUEENP", PieceType::kQueenP)
-    .value("ROOKP", PieceType::kRookP)
-    .value("BISHOPP", PieceType::kBishopP)
-    .value("KNIGHTP", PieceType::kKnightP)
-    .export_values();
+      .value("EMPTY", PieceType::kEmpty)
+      .value("KING", PieceType::kKing)
+      .value("QUEEN", PieceType::kQueen)
+      .value("ROOK", PieceType::kRook)
+      .value("BISHOP", PieceType::kBishop)
+      .value("KNIGHT", PieceType::kKnight)
+      .value("PAWN", PieceType::kPawn)
+      .value("QUEENP", PieceType::kQueenP)
+      .value("ROOKP", PieceType::kRookP)
+      .value("BISHOPP", PieceType::kBishopP)
+      .value("KNIGHTP", PieceType::kKnightP)
+      .export_values();
 
   py::class_<Piece>(crazyhouse, "Piece")
       .def(py::init<>())
@@ -107,7 +107,8 @@ void open_spiel::init_pyspiel_games_crazyhouse(py::module& m) {
           [](const std::string& data) {  // __setstate__
             std::pair<std::shared_ptr<const Game>, std::unique_ptr<State>>
                 game_and_state = DeserializeGameAndState(data);
-            return dynamic_cast<CrazyhouseState*>(game_and_state.second.release());
+            return dynamic_cast<CrazyhouseState*>(
+                game_and_state.second.release());
           }));
 
   py::classh<CrazyhouseGame, Game>(m, "CrazyhouseGame")
@@ -124,10 +125,10 @@ void open_spiel::init_pyspiel_games_crazyhouse(py::module& m) {
 
   // action_to_move(action: int, board: CrazyhouseBoard, chess960: bool = false)
   crazyhouse.def("action_to_move", &crazyhouse::ActionToMove, py::arg("action"),
-            py::arg("board"));
+                 py::arg("board"));
 
   // move_to_action(move: Move, board_size: int = default_size,
   //                chess960: bool = false)
-  crazyhouse.def("move_to_action", &crazyhouse::MoveToAction,
-            py::arg("move"), py::arg("board_size") = crazyhouse::kDefaultBoardSize);
+  crazyhouse.def("move_to_action", &crazyhouse::MoveToAction, py::arg("move"),
+                 py::arg("board_size") = crazyhouse::kDefaultBoardSize);
 }

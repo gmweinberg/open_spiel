@@ -12,11 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#pragma once
+#ifndef OPEN_SPIEL_GAMES_GOMOKU_GOMOKU_GRID_H_
+#define OPEN_SPIEL_GAMES_GOMOKU_GOMOKU_GRID_H_
 
-#include <algorithm>   // std::fill
+#include <algorithm>  // std::fill
 #include <cstddef>
+#include <utility>
 #include <vector>
+
+#include "open_spiel/spiel_utils.h"
 
 namespace open_spiel {
 namespace gomoku {
@@ -65,7 +69,7 @@ class Grid {
   }
 
   Coord Unflatten(std::size_t index) const {
-    SPIEL_CHECK_LE(index,  data_.size());
+    SPIEL_CHECK_LE(index, data_.size());
 
     Coord coord(dims_);
     for (std::size_t d = 0; d < dims_; ++d) {
@@ -119,38 +123,43 @@ class Grid {
     }
     return false;  // zero vector should not be present
   }
+
   // These are the one-step basic rotations. To get all rotations apply these
   // 1, 2, or 3 times. In 3 or more dimensions we must also compose them.
+  // Note: only supports 2D.
   std::vector<std::pair<int, int>> GenRotations() const {
+    SPIEL_CHECK_EQ(dims_, 2);
     std::vector<std::pair<int, int>> rotations;
-      for (int i = 0; i < dims_; ++i) {
-        for (int j = i + 1; j < dims_; ++j) {
-          rotations.emplace_back(i, j);
-        }
+    for (int i = 0; i < dims_; ++i) {
+      for (int j = i + 1; j < dims_; ++j) {
+        rotations.emplace_back(i, j);
       }
+    }
     return rotations;
   }
 
+  // Note: only supports 2D.
   Grid<T> ApplyRotation(int i, int j) const {
     SPIEL_CHECK_LT(i, j);
     SPIEL_CHECK_LT(j, dims_);
+    SPIEL_CHECK_EQ(dims_, 2);
 
     Grid<T> result(size_, dims_, wrap_);
 
     const int L = size_;
 
     for (int idx = 0; idx < NumCells(); ++idx) {
-       Coord old = Unflatten(idx);
-       Coord neu = old;
+      Coord old = Unflatten(idx);
+      Coord neu = old;
 
-       const int x = old[i];
-       const int y = old[j];
+      const int x = old[i];
+      const int y = old[j];
 
-       neu[i] = (L - 1) - y;
-       neu[j] = x;
+      neu[i] = (L - 1) - y;
+      neu[j] = x;
 
-       result.At(neu) =  At(old);
-     }
+      result.At(neu) = At(old);
+    }
 
     return result;
   }
@@ -159,6 +168,7 @@ class Grid {
   // by composing these straigh reflections with rotations.
   std::vector<int> GenReflections() const {
     std::vector<int> refs;
+    refs.reserve(dims_);
     for (int k = 0; k < dims_; ++k) {
       refs.push_back(k);
     }
@@ -172,12 +182,12 @@ class Grid {
     const int L = size_;
 
     for (int idx = 0; idx < NumCells(); ++idx) {
-       Coord old = Unflatten(idx);
-       Coord neu = old;
+      Coord old = Unflatten(idx);
+      Coord neu = old;
 
-       neu[k] = (L - 1) - old[k];
+      neu[k] = (L - 1) - old[k];
 
-       result.At(neu) = At(old);
+      result.At(neu) = At(old);
     }
 
     return result;
@@ -225,3 +235,5 @@ class Grid {
 
 }  // namespace gomoku
 }  // namespace open_spiel
+
+#endif  // OPEN_SPIEL_GAMES_GOMOKU_GOMOKU_GRID_H_

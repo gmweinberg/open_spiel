@@ -47,19 +47,10 @@ class GamesCrazyhouseTest(parameterized.TestCase):
     while count < 200 and not state.is_terminal():
       # print(state)
       count += 1
-      player = state.current_player()
       legal_actions = state.legal_actions()
       board = state.board()
       for action in legal_actions:
-        action_str = state.action_to_string(player, action)
         move = crazyhouse.action_to_move(action, board)
-        move_from = move.from_square
-        move_to = move.to_square
-        decoded_from_to = (f"({move_from.x} {move_from.y}) -> " +
-                           f"({move_to.x} {move_to.y})")
-        #print(f"Legal action: {action_str} decoded from to {decoded_from_to}")
-        #print(f"Move representations: {move.to_string()} | " +
-        #      f"{move.to_lan()} | {move.to_san(board)}")
         # Now do the reverse mapping from both string representations to check
         # that they correspond to this action.
         action_from_lan = state.parse_move_to_action(move.to_lan())
@@ -73,11 +64,13 @@ class GamesCrazyhouseTest(parameterized.TestCase):
     print("Moves history:")
     print(" ".join([move.to_lan() for move in state.moves_history()]))
     if count < 200:
-        self.assertTrue(state.is_terminal())
+      self.assertTrue(state.is_terminal())
 
   def test_state_from_fen(self):
     game = pyspiel.load_game("crazyhouse")
-    fen_string = "rn1qk1nr/ppp2ppp/3p4/2b1p3/2B1P3/3P1Q2/PPP2PPP/RNB2RK1[Bn] b kq - 0 6"
+    fen_string = (
+        "rn1qk1nr/ppp2ppp/3p4/2b1p3/2B1P3/3P1Q2/PPP2PPP/RNB2RK1[Bn] b kq - 0 6"
+    )
     state = game.new_initial_state(fen_string)
     self.assertEqual(state.board().to_fen(), fen_string)
     self.assertEqual(state.num_repetitions(state), 1)
@@ -141,14 +134,14 @@ class GamesCrazyhouseTest(parameterized.TestCase):
           action = np.random.choice(legal_actions)
           state.apply_action(action)
 
-    def test_in_check(self):
-        game = pyspiel.load_game("crazyhouse")
-        state = game.new_initial_state()
-        state.apply_action(state.parse_move_to_action('e2e4'))
-        state.apply_action(state.parse_move_to_action('f7f5'))
-        self.assertFalse(state.in_check())
-        state.apply_action(state.parse_move_to_action('d1h5'))
-        self.assertTrue(state.in_check())
+  def test_in_check(self):
+    game = pyspiel.load_game("crazyhouse")
+    state = game.new_initial_state()
+    state.apply_action(state.parse_move_to_action("e2e4"))
+    state.apply_action(state.parse_move_to_action("f7f5"))
+    self.assertFalse(state.in_check())
+    state.apply_action(state.parse_move_to_action("d1h5"))
+    self.assertTrue(state.in_check())
 
 
 if __name__ == "__main__":

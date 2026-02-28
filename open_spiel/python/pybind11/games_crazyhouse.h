@@ -17,9 +17,8 @@
 
 #include "open_spiel/python/pybind11/pybind11.h"
 
-// Initialze the Python interface for games/negotiation.
 namespace open_spiel {
-void init_pyspiel_games_crazyhouse(::pybind11::module &m);
+void init_pyspiel_games_crazyhouse(::pybind11::module& m);
 }
 
 #endif  // OPEN_SPIEL_PYTHON_PYBIND11_GAMES_CRAZYHOUSE_H_

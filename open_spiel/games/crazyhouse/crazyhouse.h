@@ -12,12 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-// Usually in crazyhouse a promoted piece reverts to a pawn when captured.
-// "Sticky promotions" means it stays promoted.
-// I threw in "King of the Hill" as an option because it was almost a gimme.
-// The insanity parameter tells how many copies of a captured piece you get
-// in the pockets. Insanity of zero is normal chess (so you can play normal
-// king of the hill.
 
 #ifndef OPEN_SPIEL_GAMES_CRAZYHOUSE_CRAZYHOUSE_H_
 #define OPEN_SPIEL_GAMES_CRAZYHOUSE_CRAZYHOUSE_H_
@@ -38,17 +32,32 @@
 #include "open_spiel/spiel.h"
 #include "open_spiel/spiel_utils.h"
 
-// Game of chess:
-// https://en.wikipedia.org/wiki/Chess
+// An implementation of Crazyhouse chess variant:
+// https://en.wikipedia.org/wiki/Crazyhouse
+//
 //
 // Parameters:
-//       "chess960"    bool      is it a Fischer Random game?  (default: false)
+//       "chess960"          bool  is it a Fischer Random game? (default: false)
+//       "insanity"          int   number of pocket pieces per capture (def: 1)
+//       "king_of_hill"      bool  is it King of the Hill?  (default: false)
+//       "sticky_promotions" bool  are promotions sticky?  (default: false)
 //
+// Usually in Crazyhouse a promoted piece reverts to a pawn when captured.
+// "Sticky promotions" means it stays promoted. The insanity parameter tells
+// how many copies of a captured piece you get in the pockets. Insanity of zero
+// is normal chess (so you can play normal king of the hill.
+// King of the Hill is a variant in which the objective is to occupy the four
+// central squares with a king (https://www.chess.com/terms/king-of-the-hill).
 
 namespace open_spiel {
 namespace crazyhouse {
 
 // Constants.
+constexpr bool kDefaultChess960 = false;
+constexpr bool kDefaultStickyPromotions = false;
+constexpr bool kDefaultKingOfHill = false;
+constexpr int kDefaultInsanity = 1;
+
 inline constexpr int NumPlayers() { return 2; }
 inline constexpr double LossUtility() { return -1; }
 inline constexpr double DrawUtility() { return 0; }
@@ -67,16 +76,10 @@ inline const std::vector<int>& ObservationTensorShape() {
   static std::vector<int> shape{
       21 /* piece types * colours + empty */ + 1 /* repetition count */ +
           1 /* side to move */ + 1 /* irreversible move counter */ +
-          4 /* castling rights */ +
-          10 /* pockets */ ,
+          4 /* castling rights */ + 10 /* pockets */,
       kMaxBoardSize, kMaxBoardSize};
   return shape;
 }
-
-constexpr bool kDefaultChess960 = false;
-constexpr bool kDefaultStickyPromotions = false;
-constexpr bool kDefaultKingOfHill = false;
-constexpr int kDefaultInsanity = 1;
 
 class CrazyhouseGame;
 
@@ -90,16 +93,14 @@ inline int ColorToPlayer(Color c) {
   }
 }
 
-inline int OtherPlayer(Player player) {
-  return player == Player {0} ? 1 : 0;
-}
+inline int OtherPlayer(Player player) { return player == Player{0} ? 1 : 0; }
 
 inline constexpr std::array<PieceType, 3> kUnderPromotionIndexToType = {
-PieceType::kRook, PieceType::kBishop, PieceType::kKnight};
+    PieceType::kRook, PieceType::kBishop, PieceType::kKnight};
 inline constexpr std::array<Offset, 3> kUnderPromotionDirectionToOffset = {
-{{0, 1}, {1, 1}, {-1, 1}}};
+    {{0, 1}, {1, 1}, {-1, 1}}};
 inline constexpr int kNumUnderPromotions =
-kUnderPromotionIndexToType.size() * kUnderPromotionDirectionToOffset.size();
+    kUnderPromotionIndexToType.size() * kUnderPromotionDirectionToOffset.size();
 
 // Reads a bitfield within action, with LSB at offset, and length bits long (up
 // to 8).
@@ -175,9 +176,7 @@ class CrazyhouseState : public State {
   std::unique_ptr<State> Clone() const override;
   void UndoAction(Player player, Action action) override;
 
-  bool InCheck() const {
-    return current_board_.InCheck();
-  }
+  bool InCheck() const { return current_board_.InCheck(); }
 
   // Current board.
   CrazyhouseBoard& Board() { return current_board_; }
@@ -296,7 +295,6 @@ class CrazyhouseGame : public Game {
   int Insanity() const { return insanity_; }
   bool StickyPromotions() const { return sticky_promotions_; }
   bool KingOfHill() const { return king_of_hill_; }
-
 
  private:
   bool chess960_;

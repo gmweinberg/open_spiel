@@ -16,26 +16,31 @@
 #define OPEN_SPIEL_GAMES_GOMOKU_GOMOKU_H_
 
 #include <array>
+#include <cstddef>
+#include <cstdint>
 #include <memory>
-#include <ostream>
 #include <string>
 #include <vector>
 
-#include "open_spiel/abseil-cpp/absl/random/random.h"
 #include "open_spiel/abseil-cpp/absl/types/optional.h"
 #include "open_spiel/abseil-cpp/absl/types/span.h"
 #include "open_spiel/json/include/nlohmann/json.hpp"
 #include "open_spiel/game_parameters.h"
+#include "open_spiel/games/gomoku/gomoku_grid.h"
+#include "open_spiel/spiel.h"
 #include "open_spiel/spiel_globals.h"
 #include "open_spiel/spiel_utils.h"
-#include "open_spiel/spiel.h"
-#include "open_spiel/games/gomoku/gomoku_grid.h"
 
-
-// Simple game of Noughts and Crosses:
-// https://en.wikipedia.org/wiki/Tic-tac-toe
+// Simple game of connecting 5 stones in a row on a square grid.
+// https://en.wikipedia.org/wiki/Gomoku
 //
-// Parameters: none
+// Parameters:
+//
+//  "anti"        bool whether to use anti-scoring           (default = false)
+//  "dims"        int  number of dimensions                  (default = 2)
+//  "size"        int  size of the grid                      (default = 15)
+//  "connect"     int  number in a row to win                (default = 5)
+//  "wrap"        bool whether to wrap around edges          (default = false)
 
 namespace open_spiel {
 namespace gomoku {
@@ -87,7 +92,7 @@ inline char StoneToChar(Stone s) {
 class GomokuState : public State {
  public:
   explicit GomokuState(std::shared_ptr<const Game> game,
-                     const std::string& state_str = "");
+                       const std::string& state_str = "");
 
   GomokuState(const GomokuState&) = default;
   GomokuState& operator=(const GomokuState&) = default;
@@ -103,28 +108,23 @@ class GomokuState : public State {
 
   std::string ActionToString(Player player, Action action_id) const override;
   std::string ToString() const override;
-  bool IsTerminal() const override {
-    return terminal_;
-  }
+  bool IsTerminal() const override { return terminal_; }
   std::vector<double> Returns() const override;
   std::string InformationStateString(Player player) const override;
   std::string ObservationString(Player player) const override;
   void ObservationTensor(Player player,
                          absl::Span<float> values) const override;
   std::unique_ptr<State> Clone() const override;
-  void UndoAction(Player player, Action move) override;
   std::vector<Action> LegalActions() const override;
   uint64_t HashValue() const;
   void SetSymmetryPolicy(const SymmetryPolicy& policy) {
     symmetry_policy_ = policy;
   }
-  const SymmetryPolicy& GetSymmetryPolicy() const {
-    return symmetry_policy_;
-  }
+  const SymmetryPolicy& GetSymmetryPolicy() const { return symmetry_policy_; }
   uint64_t ComputeZobrist(const Grid<Stone>& grid) const;
   uint64_t SymmetricHash() const;
-  absl::optional<std::vector<Grid<Stone>::Coord>>
-    FindWinLineFromLastMove(Action last_move) const;
+  absl::optional<std::vector<Grid<Stone>::Coord>> FindWinLineFromLastMove(
+      Action last_move) const;
   const std::vector<Grid<Stone>::Coord>& WinningLine() const;
   // Return a string that represents the state as boards or stacks or boards
   std::string Pretty() const;
@@ -134,7 +134,10 @@ class GomokuState : public State {
 
  private:
   void CheckWinFromLastMove(Action move);
-  Player current_player_ = 0;   // Player zero goes first by default
+  std::string ToString2D() const;
+  std::string ToStringGeneral() const;
+
+  Player current_player_ = 0;  // Player zero goes first by default
   int move_count_ = 0;
   Grid<Stone> board_;
   int size_;
@@ -144,7 +147,7 @@ class GomokuState : public State {
   int initial_stones_;
   float black_score_;
   float white_score_;
-  bool terminal_ =  false;
+  bool terminal_ = false;
   uint64_t zobrist_hash_ = 0;
   SymmetryPolicy symmetry_policy_;
   std::vector<Grid<Stone>::Coord> winning_line_;
@@ -158,8 +161,7 @@ class GomokuGame : public Game {
   std::unique_ptr<State> NewInitialState() const override {
     return std::unique_ptr<State>(new GomokuState(shared_from_this()));
   }
-  std::unique_ptr<State> NewInitialState(
-      const nlohmann::json& json) const {
+  std::unique_ptr<State> NewInitialState(const nlohmann::json& json) const {
     return std::unique_ptr<State>(new GomokuState(shared_from_this(), json));
   }
   int NumPlayers() const override { return kNumPlayers; }

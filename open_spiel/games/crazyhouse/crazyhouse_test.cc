@@ -19,7 +19,7 @@
 
 #include "open_spiel/games/crazyhouse/crazyhouse.h"
 
-#include <cstdint>
+#include <iomanip>
 #include <iostream>
 #include <memory>
 #include <random>
@@ -42,7 +42,6 @@ namespace {
 
 namespace testing = open_spiel::testing;
 
-
 void CheckUndo(const char* fen, const char* move_san, const char* fen_after) {
   std::shared_ptr<const Game> game = LoadGame("crazyhouse");
   CrazyhouseState state(game, fen);
@@ -62,10 +61,9 @@ void ApplySANMove(const char* move_san, CrazyhouseState* state) {
   state->ApplyAction(MoveToAction(*maybe_move, state->BoardSize()));
 }
 
-void ApplyLANMove(const char* move_lan, CrazyhouseState* state,
-    bool chess960) {
+void ApplyLANMove(const char* move_lan, CrazyhouseState* state, bool chess960) {
   absl::optional<Move> maybe_move =
-    state->Board().ParseLANMove(move_lan, chess960);
+      state->Board().ParseLANMove(move_lan, chess960);
   SPIEL_CHECK_TRUE(maybe_move);
   state->ApplyAction(MoveToAction(*maybe_move, state->BoardSize()));
 }
@@ -84,7 +82,7 @@ void BasicCrazyhouse960Tests() {
   testing::LoadGameTest("crazyhouse(chess960=true)");
   testing::RandomSimTest(*LoadGame("crazyhouse(chess960=true)"), 10);
   const std::string game_params =
-    "crazyhouse(chess960=true,king_of_hill=true,insanity=3)";
+      "crazyhouse(chess960=true,king_of_hill=true,insanity=3)";
   testing::RandomSimTest(*LoadGame(game_params), 10);
 }
 
@@ -298,15 +296,15 @@ void ObservationTensorTests() {
   SPIEL_CHECK_EQ(ValueAt(v, shape, 26, 2, 2), 1.0);
   SPIEL_CHECK_EQ(ValueAt(v, shape, 27, 3, 3), 1.0);
 
-
   // Make a new board to check for new pieces and pockets.
-  const std::string crazy_fen = "ecakrhnb/pppppppp/8/8/8/8/PPPPPPPP/ECAKRHNB"
-    "[PppNNNnBbbQQQQqqRRrrr] w  - 0 1";
+  const std::string crazy_fen =
+      "ecakrhnb/pppppppp/8/8/8/8/PPPPPPPP/ECAKRHNB"
+      "[PppNNNnBbbQQQQqqRRrrr] w  - 0 1";
   std::unique_ptr<State> crazy_state = game->NewInitialState(crazy_fen);
 
   std::vector<float> v2(game->ObservationTensorSize());
   crazy_state->ObservationTensor(crazy_state->CurrentPlayer(),
-                                  absl::MakeSpan(v2));
+                                 absl::MakeSpan(v2));
 
   // Promoted Queens.
   SPIEL_CHECK_EQ(ValueAt(v2, shape, 12, "a1"), 1.0);
@@ -334,22 +332,21 @@ void ObservationTensorTests() {
 
   std::cerr << std::fixed << std::setprecision(6);
   for (int i = 28; i <= 37; ++i) {
-     std::cerr << "plane " << i << ": "
-            << ValueAt(v2, shape, i, 0, 0) << "\n";
+    std::cerr << "plane " << i << ": " << ValueAt(v2, shape, i, 0, 0) << "\n";
   }
 
   // Pocket counts. Here inner loop is piece type
-    "[PppNNNnBbbQQQQqqRRrrr] w  - 0 1";
-  SPIEL_CHECK_EQ(ValueAt(v2, shape, 28, 0, 0), 1.0/16);  // P
-  SPIEL_CHECK_EQ(ValueAt(v2, shape, 29, 0, 0), 3.0/16);  // N
-  SPIEL_CHECK_EQ(ValueAt(v2, shape, 30, 0, 0), 1.0/16);  // B
-  SPIEL_CHECK_EQ(ValueAt(v2, shape, 31, 0, 0), 2.0/16);  // R
-  SPIEL_CHECK_EQ(ValueAt(v2, shape, 32, 0, 0), 4.0/16);  // Q
-  SPIEL_CHECK_EQ(ValueAt(v2, shape, 33, 0, 0), 2.0/16);  // p
-  SPIEL_CHECK_EQ(ValueAt(v2, shape, 34, 0, 0), 1.0/16);  // n
-  SPIEL_CHECK_EQ(ValueAt(v2, shape, 35, 0, 0), 2.0/16);  // b
-  SPIEL_CHECK_EQ(ValueAt(v2, shape, 36, 0, 0), 3.0/16);  // r
-  SPIEL_CHECK_EQ(ValueAt(v2, shape, 37, 0, 0), 2.0/16);  // q
+  // "[PppNNNnBbbQQQQqqRRrrr] w  - 0 1";
+  SPIEL_CHECK_EQ(ValueAt(v2, shape, 28, 0, 0), 1.0 / 16);  // P
+  SPIEL_CHECK_EQ(ValueAt(v2, shape, 29, 0, 0), 3.0 / 16);  // N
+  SPIEL_CHECK_EQ(ValueAt(v2, shape, 30, 0, 0), 1.0 / 16);  // B
+  SPIEL_CHECK_EQ(ValueAt(v2, shape, 31, 0, 0), 2.0 / 16);  // R
+  SPIEL_CHECK_EQ(ValueAt(v2, shape, 32, 0, 0), 4.0 / 16);  // Q
+  SPIEL_CHECK_EQ(ValueAt(v2, shape, 33, 0, 0), 2.0 / 16);  // p
+  SPIEL_CHECK_EQ(ValueAt(v2, shape, 34, 0, 0), 1.0 / 16);  // n
+  SPIEL_CHECK_EQ(ValueAt(v2, shape, 35, 0, 0), 2.0 / 16);  // b
+  SPIEL_CHECK_EQ(ValueAt(v2, shape, 36, 0, 0), 3.0 / 16);  // r
+  SPIEL_CHECK_EQ(ValueAt(v2, shape, 37, 0, 0), 2.0 / 16);  // q
 }
 
 void MoveConversionTests() {
@@ -357,7 +354,7 @@ void MoveConversionTests() {
   std::mt19937 rng(23);
   for (int i = 0; i < 100; ++i) {
     std::unique_ptr<State> state = game->NewInitialState();
-    std:: cout << "MoveConversion Game # " << i << std::endl;
+    std::cout << "MoveConversion Game # " << i << std::endl;
     while (!state->IsTerminal()) {
       const CrazyhouseState* crazyhouse_state =
           dynamic_cast<const CrazyhouseState*>(state.get());
@@ -366,8 +363,8 @@ void MoveConversionTests() {
       int action_index = dist(rng);
       Action action = legal_actions[action_index];
       Move move = ActionToMove(action, crazyhouse_state->Board());
-      Action action_from_move = MoveToAction(move,
-        crazyhouse_state->BoardSize());
+      Action action_from_move =
+          MoveToAction(move, crazyhouse_state->BoardSize());
       SPIEL_CHECK_EQ(action, action_from_move);
       const CrazyhouseBoard& board = crazyhouse_state->Board();
       CrazyhouseBoard fresh_board = crazyhouse_state->StartBoard();
@@ -448,8 +445,8 @@ void KOTHMarchTest() {
   SPIEL_CHECK_TRUE(state->IsTerminal());
   // Black wins
   SPIEL_CHECK_EQ(state->Returns()[crazyhouse::ColorToPlayer(Color::kWhite)], 1);
-  SPIEL_CHECK_EQ(state->Returns()
-    [crazyhouse::ColorToPlayer(Color::kBlack)], -1);
+  SPIEL_CHECK_EQ(state->Returns()[crazyhouse::ColorToPlayer(Color::kBlack)],
+                 -1);
 }
 
 void DropMateTest() {
@@ -466,22 +463,21 @@ void DropMateTest() {
   // Checkmate assertions
   SPIEL_CHECK_TRUE(state->IsTerminal());
   // Black wins
-  SPIEL_CHECK_EQ(state->Returns()
-    [crazyhouse::ColorToPlayer(Color::kWhite)], -1);
-  SPIEL_CHECK_EQ(state->Returns()
-    [crazyhouse::ColorToPlayer(Color::kBlack)], 1);
+  SPIEL_CHECK_EQ(state->Returns()[crazyhouse::ColorToPlayer(Color::kWhite)],
+                 -1);
+  SPIEL_CHECK_EQ(state->Returns()[crazyhouse::ColorToPlayer(Color::kBlack)], 1);
 }
 
 void StickySticksTest() {
   const std::string fen =
-    "r1b1kbnr/pppp2Pp/2n2q2/4p3/8/8/PPPP1PPP/RNBQKBNR[PP] w KQkq - 0 5";
+      "r1b1kbnr/pppp2Pp/2n2q2/4p3/8/8/PPPP1PPP/RNBQKBNR[PP] w KQkq - 0 5";
   auto game = open_spiel::LoadGame("crazyhouse(sticky_promotions=true)");
   auto state = game->NewInitialState(fen);
   CrazyhouseState* ch_state = dynamic_cast<CrazyhouseState*>(state.get());
   ApplyLANMove("g7h8q", ch_state, false);
   ApplyLANMove("f6h8", ch_state, false);
   const std::string target =
-    "r1b1kbnq/pppp3p/2n5/4p3/8/8/PPPP1PPP/RNBQKBNR[PPRq] w KQq - 0 6";
+      "r1b1kbnq/pppp3p/2n5/4p3/8/8/PPPP1PPP/RNBQKBNR[PPRq] w KQq - 0 6";
   const std::string new_fen = ch_state->ToString();
   SPIEL_CHECK_EQ(new_fen, target);
 }
@@ -490,9 +486,9 @@ void HashTest() {
   auto game = open_spiel::LoadGame("crazyhouse");
   // Brackets are optional wit no poket pieces so these are the same.
   const std::string fen1 =
-    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR[] w KQkq - 0 1";
+      "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR[] w KQkq - 0 1";
   const std::string fen2 =
-    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+      "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
   auto state1 = game->NewInitialState(fen1);
   auto state2 = game->NewInitialState(fen2);
   CrazyhouseState* ch_state1 = dynamic_cast<CrazyhouseState*>(state1.get());
@@ -500,12 +496,12 @@ void HashTest() {
   SPIEL_CHECK_TRUE(ch_state1 != nullptr);
   SPIEL_CHECK_TRUE(ch_state2 != nullptr);
   SPIEL_CHECK_EQ(ch_state1->Board().HashValue(),
-    ch_state2->Board().HashValue());
+                 ch_state2->Board().HashValue());
   // These are the same on the board but pockets are different.
   const std::string fen3 =
-    "rnbqkbnr/ppp1pppp/8/3P4/8/8/PPPP1PPP/RNBQKBNR[P] b KQkq - 0 2";
+      "rnbqkbnr/ppp1pppp/8/3P4/8/8/PPPP1PPP/RNBQKBNR[P] b KQkq - 0 2";
   const std::string fen4 =
-    "rnbqkbnr/ppp1pppp/8/3P4/8/8/PPPP1PPP/RNBQKBNR[p] b KQkq - 0 2";
+      "rnbqkbnr/ppp1pppp/8/3P4/8/8/PPPP1PPP/RNBQKBNR[p] b KQkq - 0 2";
   auto state3 = game->NewInitialState(fen3);
   auto state4 = game->NewInitialState(fen4);
   CrazyhouseState* ch_state3 = dynamic_cast<CrazyhouseState*>(state3.get());
@@ -513,14 +509,14 @@ void HashTest() {
   SPIEL_CHECK_TRUE(ch_state3 != nullptr);
   SPIEL_CHECK_TRUE(ch_state4 != nullptr);
   SPIEL_CHECK_NE(ch_state3->Board().HashValue(),
-    ch_state4->Board().HashValue());
+                 ch_state4->Board().HashValue());
   // promote some pieces
   const std::string fen5 =
-    "rhaekbnr/cpp1pppp/8/3P4/8/8/PPPP1PPP/RNBQKBNR[p] b KQkq - 0 2";
+      "rhaekbnr/cpp1pppp/8/3P4/8/8/PPPP1PPP/RNBQKBNR[p] b KQkq - 0 2";
   auto state5 = game->NewInitialState(fen5);
   CrazyhouseState* ch_state5 = dynamic_cast<CrazyhouseState*>(state5.get());
   SPIEL_CHECK_TRUE(ch_state5 != nullptr);
-  auto hv = ch_state5->Board().HashValue();
+  ch_state5->Board().HashValue();
 }
 
 }  // namespace
@@ -537,7 +533,7 @@ int main(int argc, char** argv) {
   open_spiel::crazyhouse::BasicCrazyhouse960Tests();
   open_spiel::crazyhouse::Crazyhouse960SerializationRootIsChanceNodeTest();
   open_spiel::crazyhouse::
-    Crazyhouse960SerializationRootIsSpecificStartingPositionTest();
+      Crazyhouse960SerializationRootIsSpecificStartingPositionTest();
   open_spiel::crazyhouse::ThreeFoldRepetitionTestWithEnPassant();
   open_spiel::crazyhouse::DropMateTest();
   open_spiel::crazyhouse::KOTHMarchTest();

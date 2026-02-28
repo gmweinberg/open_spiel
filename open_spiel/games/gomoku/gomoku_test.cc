@@ -12,11 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "open_spiel/games/gomoku/gomoku.h"
+
 #include <memory>
 #include <string>
 #include <vector>
 
-#include "open_spiel/games/gomoku/gomoku.h"
+#include "open_spiel/abseil-cpp/absl/types/span.h"
 #include "open_spiel/spiel.h"
 #include "open_spiel/spiel_utils.h"
 #include "open_spiel/tests/basic_tests.h"
@@ -33,11 +35,10 @@ void BasicGomokuTests() {
   testing::RandomSimTest(*LoadGame("gomoku"), 100);
 }
 
-
 void TestMoveToActionLoop() {
   auto game = LoadGame("gomoku");
 
-  const GomokuGame* gomoku  = dynamic_cast<const GomokuGame*>(game.get());
+  const GomokuGame* gomoku = dynamic_cast<const GomokuGame*>(game.get());
 
   SPIEL_CHECK_TRUE(gomoku != nullptr);
   for (Action a = 0; a < gomoku->NumDistinctActions(); ++a) {
@@ -48,7 +49,6 @@ void TestMoveToActionLoop() {
 void TestObservationTensor() {
   std::shared_ptr<const Game> game = LoadGame("gomoku");
   std::unique_ptr<State> state = game->NewInitialState();
-
 
   const int num_cells = game->ObservationTensorShape()[1];
   const int tensor_size = 3 * num_cells;

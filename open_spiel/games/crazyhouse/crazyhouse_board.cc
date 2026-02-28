@@ -43,10 +43,14 @@ constexpr const char* kShredderBlackCastlingFiles = "abcdefgh";
 
 inline PieceType PromotedType(PieceType type) {
   switch (type) {
-    case PieceType::kKnight: return PieceType::kKnightP;
-    case PieceType::kBishop: return PieceType::kBishopP;
-    case PieceType::kRook: return PieceType::kRookP;
-    case PieceType::kQueen: return PieceType::kQueenP;
+    case PieceType::kKnight:
+      return PieceType::kKnightP;
+    case PieceType::kBishop:
+      return PieceType::kBishopP;
+    case PieceType::kRook:
+      return PieceType::kRookP;
+    case PieceType::kQueen:
+      return PieceType::kQueenP;
     default:
       SpielFatalError("Invalid piece type for promotion");
       return PieceType::kKnightP;  // Unreachable, but silences compiler
@@ -60,7 +64,7 @@ bool IsMoveCharacter(char c) {
          (c >= '0' && c <= '9');
 }
 
-std::pair<std::string, std::string> SplitAnnotations(const std::string &move) {
+std::pair<std::string, std::string> SplitAnnotations(const std::string& move) {
   for (int i = 0; i < move.size(); ++i) {
     if (!IsMoveCharacter(move[i])) {
       return {move.substr(0, i), std::string(absl::ClippedSubstr(move, i))};
@@ -98,13 +102,13 @@ absl::optional<PieceType> PieceTypeFromChar(char c) {
     case 'K':
       return PieceType::kKing;
     case 'H':
-        return PieceType::kKnightP;
+      return PieceType::kKnightP;
     case 'A':
-        return PieceType::kBishopP;
+      return PieceType::kBishopP;
     case 'C':
-        return PieceType::kRookP;
+      return PieceType::kRookP;
     case 'E':
-        return PieceType::kQueenP;
+      return PieceType::kQueenP;
     default:
       std::cerr << "Invalid piece type: " << c << std::endl;
       return absl::nullopt;
@@ -136,9 +140,8 @@ std::string PieceTypeToString(PieceType p, bool uppercase) {
     case PieceType::kKnightP:
       return uppercase ? "H" : "h";
     default:
-      SpielFatalError(
-        std::string("Unknown piece (ptts): ") +
-         std::to_string(static_cast<int>(p)));
+      SpielFatalError(std::string("Unknown piece (ptts): ") +
+                      std::to_string(static_cast<int>(p)));
       return "This will never return.";
   }
 }
@@ -166,9 +169,8 @@ std::string Piece::ToUnicode() const {
         case PieceType::kKing:
           return "♚";
         default:
-          SpielFatalError(
-            std::string("Unknown piece (ToUnicode): ") +
-            std::to_string(static_cast<int>(type)));
+          SpielFatalError(std::string("Unknown piece (ToUnicode): ") +
+                          std::to_string(static_cast<int>(type)));
           return "This will never return.";
       }
     case Color::kWhite:
@@ -209,7 +211,7 @@ std::string Piece::ToString() const {
                                 : absl::AsciiStrToLower(base);
 }
 
-absl::optional<Square> SquareFromString(const std::string &s) {
+absl::optional<Square> SquareFromString(const std::string& s) {
   if (s.size() != 2) return kInvalidSquare;
 
   auto file = ParseFile(s[0]);
@@ -218,8 +220,8 @@ absl::optional<Square> SquareFromString(const std::string &s) {
   return absl::nullopt;
 }
 
-bool IsLongDiagonal(const crazyhouse::Square &from_sq,
-    const crazyhouse::Square &to_sq, int board_size) {
+bool IsLongDiagonal(const crazyhouse::Square& from_sq,
+                    const crazyhouse::Square& to_sq, int board_size) {
   if (from_sq == to_sq) {
     return false;
   }
@@ -245,23 +247,22 @@ std::string Move::ToString() const {
                       SquareToString(to), extra);
 }
 
-std::string Move::ToLAN(bool chess960,
-                        const CrazyhouseBoard *board_ptr) const {
+std::string Move::ToLAN(bool chess960, const CrazyhouseBoard* board_ptr) const {
   if (IsDropMove()) {
-     std::string move_text;
-     PieceType from_type = Pocket::DropPieceType(from.y);
-     move_text += PieceTypeToString(from_type);
-     move_text += '@';
-     absl::StrAppend(&move_text, SquareToString(to));
-     return move_text;
+    std::string move_text;
+    PieceType from_type = Pocket::DropPieceType(from.y);
+    move_text += PieceTypeToString(from_type);
+    move_text += '@';
+    absl::StrAppend(&move_text, SquareToString(to));
+    return move_text;
   }
   if (chess960 && is_castling()) {
     // In chess960, when castling, the LAN format is different. It includes the
     // <king position> <rook position> it is castling with.
     SPIEL_CHECK_TRUE(board_ptr != nullptr);
     Color to_play = board_ptr->ToPlay();
-    absl::optional<Square> maybe_rook_sq = board_ptr->MaybeCastlingRookSquare(
-      to_play, castle_dir);
+    absl::optional<Square> maybe_rook_sq =
+        board_ptr->MaybeCastlingRookSquare(to_play, castle_dir);
     SPIEL_CHECK_TRUE(maybe_rook_sq.has_value());
     return absl::StrCat(SquareToString(from),
                         SquareToString(maybe_rook_sq.value()));
@@ -274,14 +275,14 @@ std::string Move::ToLAN(bool chess960,
   }
 }
 
-std::string Move::ToSAN(const CrazyhouseBoard &board) const {
+std::string Move::ToSAN(const CrazyhouseBoard& board) const {
   std::string move_text;
   if (IsDropMove()) {
-     PieceType from_type = Pocket::DropPieceType(from.y);
-     move_text += PieceTypeToString(from_type);
-     move_text += '@';
-     absl::StrAppend(&move_text, SquareToString(to));
-     return move_text;
+    PieceType from_type = Pocket::DropPieceType(from.y);
+    move_text += PieceTypeToString(from_type);
+    move_text += '@';
+    absl::StrAppend(&move_text, SquareToString(to));
+    return move_text;
   }
   PieceType piece_type = board.at(from).type;
   if (is_castling()) {
@@ -318,7 +319,7 @@ std::string Move::ToSAN(const CrazyhouseBoard &board) const {
     bool rank_unique = true;
     bool disambiguation_required = false;
 
-    board.GenerateLegalMoves([&](const Move &move) -> bool {
+    board.GenerateLegalMoves([&](const Move& move) -> bool {
       if (move.IsDropMove()) {
         return true;
       }
@@ -399,6 +400,8 @@ std::string Move::ToSAN(const CrazyhouseBoard &board) const {
         std::cerr << "Cannot promote to " << PieceTypeToString(promotion_type)
                   << "! Only Q, R, B, N are allowed" << std::endl;
         break;
+      default:
+        SpielFatalError("Unknown promotion type.");
     }
   }
 
@@ -408,7 +411,7 @@ std::string Move::ToSAN(const CrazyhouseBoard &board) const {
     board_copy.ApplyMove(*this);
     if (board_copy.InCheck()) {
       bool has_escape = false;
-      board_copy.GenerateLegalMoves([&](const Move &) -> bool {
+      board_copy.GenerateLegalMoves([&](const Move&) -> bool {
         has_escape = true;
         return false;  // No need to keep generating moves.
       });
@@ -427,8 +430,8 @@ std::string Move::ToSAN(const CrazyhouseBoard &board) const {
 }
 
 CrazyhouseBoard::CrazyhouseBoard(int board_size, bool king_in_check_allowed,
-        bool allow_pass_move,
-        int insanity, bool sticky_promotions, bool king_of_hill)
+                                 bool allow_pass_move, int insanity,
+                                 bool sticky_promotions, bool king_of_hill)
     : board_size_(board_size),
       king_in_check_allowed_(king_in_check_allowed),
       allow_pass_move_(allow_pass_move),
@@ -444,9 +447,9 @@ CrazyhouseBoard::CrazyhouseBoard(int board_size, bool king_in_check_allowed,
 }
 
 /*static*/ absl::optional<CrazyhouseBoard> CrazyhouseBoard::BoardFromFEN(
-    const std::string &fen, int board_size,
-    bool king_in_check_allowed, bool allow_pass_move,
-    int insanity, bool sticky_promotions, bool king_of_hill) {
+    const std::string& fen, int board_size, bool king_in_check_allowed,
+    bool allow_pass_move, int insanity, bool sticky_promotions,
+    bool king_of_hill) {
   // Extract pocket section if present: looks like "[PNBRQpnbrq]"
   std::string fen_copy = fen;
   std::string pocket_section;
@@ -455,8 +458,8 @@ CrazyhouseBoard::CrazyhouseBoard(int board_size, bool king_in_check_allowed,
   if (lb != std::string::npos) {
     auto rb = fen_copy.find(']', lb);
     if (rb == std::string::npos) {
-        std::cerr << "Malformed pocket section in FEN: " << fen << std::endl;
-        return absl::nullopt;
+      std::cerr << "Malformed pocket section in FEN: " << fen << std::endl;
+      return absl::nullopt;
     }
     pocket_section = fen_copy.substr(lb + 1, rb - lb - 1);
     fen_copy.erase(lb, rb - lb + 1);
@@ -474,7 +477,7 @@ CrazyhouseBoard::CrazyhouseBoard(int board_size, bool king_in_check_allowed,
    * Many FEN strings don't have the last two fields.
    */
   CrazyhouseBoard board(board_size, king_in_check_allowed, allow_pass_move,
-    insanity,  sticky_promotions, king_of_hill);
+                        insanity, sticky_promotions, king_of_hill);
 
   std::vector<std::string> fen_parts = absl::StrSplit(fen_copy, ' ');
 
@@ -483,10 +486,10 @@ CrazyhouseBoard::CrazyhouseBoard(int board_size, bool king_in_check_allowed,
     return absl::nullopt;
   }
 
-  std::string &piece_configuration = fen_parts[0];
-  std::string &side_to_move = fen_parts[1];
-  std::string &castling_rights = fen_parts[2];
-  std::string &ep_square = fen_parts[3];
+  std::string& piece_configuration = fen_parts[0];
+  std::string& side_to_move = fen_parts[1];
+  std::string& castling_rights = fen_parts[2];
+  std::string& ep_square = fen_parts[3];
 
   // These are defaults if the FEN string doesn't have these fields.
   std::string fifty_clock = "0";
@@ -501,7 +504,7 @@ CrazyhouseBoard::CrazyhouseBoard(int board_size, bool king_in_check_allowed,
       absl::StrSplit(piece_configuration, '/');
 
   for (int8_t current_y = board_size - 1; current_y >= 0; --current_y) {
-    std::string &rank = piece_config_by_rank[board_size - current_y - 1];
+    std::string& rank = piece_config_by_rank[board_size - current_y - 1];
     int8_t current_x = 0;
     for (char c : rank) {
       if (current_x >= board_size) {
@@ -578,14 +581,15 @@ CrazyhouseBoard::CrazyhouseBoard(int board_size, bool king_in_check_allowed,
   // https://chess.stackexchange.com/questions/19331/how-does-x-fen-chess960-fen-differentiate-from-traditional-fen-notation
   for (char c : castling_rights) {
     for (Color color : {Color::kWhite, Color::kBlack}) {
-      std::string shredder_castling_files(
-          color == Color::kWhite ? kShredderWhiteCastlingFiles
-                                  : kShredderBlackCastlingFiles);
+      std::string shredder_castling_files(color == Color::kWhite
+                                              ? kShredderWhiteCastlingFiles
+                                              : kShredderBlackCastlingFiles);
       Square king_square = board.find(Piece{color, PieceType::kKing});
       size_t idx = shredder_castling_files.find(c);
       if (idx != std::string::npos) {
-        CastlingDirection direction = idx > king_square.x ?
-            CastlingDirection::kRight : CastlingDirection::kLeft;
+        CastlingDirection direction = idx > king_square.x
+                                          ? CastlingDirection::kRight
+                                          : CastlingDirection::kLeft;
         Square rook_sq{static_cast<int8_t>(idx), king_square.y};
         SPIEL_CHECK_TRUE(board.at(rook_sq).type == PieceType::kRook);
         SPIEL_CHECK_TRUE(board.at(rook_sq).color == color);
@@ -614,27 +618,26 @@ CrazyhouseBoard::CrazyhouseBoard(int board_size, bool king_in_check_allowed,
   // ----- Parse pockets -----
   if (!pocket_section.empty()) {
     for (char pc : pocket_section) {
-        bool white = std::isupper(pc);
-        char uc = std::toupper(pc);
-        absl::optional<PieceType> opt = PieceTypeFromChar(uc);
-        PieceType pptype = *opt;
-        if (!opt) {
-          std::cerr << "Invalid pocket char in FEN: " << pc << std::endl;
-          return absl::nullopt;
-        }
-        if (white) {
-          board.AddToPocket(Color::kWhite, pptype, 1);
-        }  else {
-          board.AddToPocket(Color::kBlack, pptype, 1);
-        }
+      bool white = std::isupper(pc);
+      char uc = std::toupper(pc);
+      absl::optional<PieceType> opt = PieceTypeFromChar(uc);
+      PieceType pptype = *opt;
+      if (!opt) {
+        std::cerr << "Invalid pocket char in FEN: " << pc << std::endl;
+        return absl::nullopt;
+      }
+      if (white) {
+        board.AddToPocket(Color::kWhite, pptype, 1);
+      } else {
+        board.AddToPocket(Color::kBlack, pptype, 1);
+      }
     }
   }
-
 
   return board;
 }
 
-Square CrazyhouseBoard::find(const Piece &piece) const {
+Square CrazyhouseBoard::find(const Piece& piece) const {
   for (int8_t y = 0; y < board_size_; ++y) {
     for (int8_t x = 0; x < board_size_; ++x) {
       Square sq{x, y};
@@ -647,8 +650,8 @@ Square CrazyhouseBoard::find(const Piece &piece) const {
   return kInvalidSquare;
 }
 
-void CrazyhouseBoard::GenerateLegalMoves(const MoveYieldFn &yield,
-                                    Color color) const {
+void CrazyhouseBoard::GenerateLegalMoves(const MoveYieldFn& yield,
+                                         Color color) const {
   // We do not need to filter moves that would result for King to move / stay
   // in check, so we can yield all pseudo legal moves
   if (king_in_check_allowed_) {
@@ -657,7 +660,7 @@ void CrazyhouseBoard::GenerateLegalMoves(const MoveYieldFn &yield,
     auto king_square = find(Piece{color, PieceType::kKing});
 
     GeneratePseudoLegalMoves(
-        [this, &king_square, &yield, color](const Move &move) {
+        [this, &king_square, &yield, color](const Move& move) {
           // See if the move is legal by applying, checking whether the king is
           // under attack, and undoing the move.
           auto board_copy = *this;
@@ -678,7 +681,7 @@ void CrazyhouseBoard::GenerateLegalMoves(const MoveYieldFn &yield,
 }
 
 void CrazyhouseBoard::GeneratePseudoLegalMoves(
-    const MoveYieldFn &yield, Color color,
+    const MoveYieldFn& yield, Color color,
     PseudoLegalMoveSettings settings) const {
   bool generating = true;
 
@@ -694,18 +697,18 @@ void CrazyhouseBoard::GeneratePseudoLegalMoves(
   for (int8_t y = 0; y < board_size_ && generating; ++y) {
     for (int8_t x = 0; x < board_size_ && generating; ++x) {
       Square sq{x, y};
-      auto &piece = at(sq);
+      auto& piece = at(sq);
       if (piece.type != PieceType::kEmpty && piece.color == color) {
         switch (piece.type) {
           case PieceType::kKing:
             GenerateKingDestinations_(
                 sq, color,
-                [&yield, &piece, &sq, &generating](const Square &to) {
+                [&yield, &piece, &sq, &generating](const Square& to) {
                   YIELD(Move(sq, to, piece));
                 });
             GenerateCastlingDestinations_(
                 sq, color, settings,
-                [&yield, &piece, &sq, &generating](const Square &to) {
+                [&yield, &piece, &sq, &generating](const Square& to) {
                   if (to.x == 2) {
                     YIELD(Move(sq, to, piece, PieceType::kEmpty,
                                CastlingDirection::kLeft));
@@ -719,7 +722,7 @@ void CrazyhouseBoard::GeneratePseudoLegalMoves(
           case PieceType::kQueenP:
             GenerateQueenDestinations_(
                 sq, color, settings,
-                [&yield, &sq, &piece, &generating](const Square &to) {
+                [&yield, &sq, &piece, &generating](const Square& to) {
                   YIELD(Move(sq, to, piece));
                 });
             break;
@@ -727,7 +730,7 @@ void CrazyhouseBoard::GeneratePseudoLegalMoves(
           case PieceType::kRookP:
             GenerateRookDestinations_(
                 sq, color, settings,
-                [&yield, &sq, &piece, &generating](const Square &to) {
+                [&yield, &sq, &piece, &generating](const Square& to) {
                   YIELD(Move(sq, to, piece));
                 });
             break;
@@ -735,7 +738,7 @@ void CrazyhouseBoard::GeneratePseudoLegalMoves(
           case PieceType::kBishopP:
             GenerateBishopDestinations_(
                 sq, color, settings,
-                [&yield, &sq, &piece, &generating](const Square &to) {
+                [&yield, &sq, &piece, &generating](const Square& to) {
                   YIELD(Move(sq, to, piece));
                 });
             break;
@@ -743,14 +746,14 @@ void CrazyhouseBoard::GeneratePseudoLegalMoves(
           case PieceType::kKnightP:
             GenerateKnightDestinations_(
                 sq, color,
-                [&yield, &sq, &piece, &generating](const Square &to) {
+                [&yield, &sq, &piece, &generating](const Square& to) {
                   YIELD(Move(sq, to, piece));
                 });
             break;
           case PieceType::kPawn:
             GeneratePawnDestinations_(
                 sq, color, settings,
-                [&yield, &sq, &piece, &generating, this](const Square &to) {
+                [&yield, &sq, &piece, &generating, this](const Square& to) {
                   if (IsPawnPromotionRank(to)) {
                     YIELD(Move(sq, to, piece, PieceType::kQueen));
                     YIELD(Move(sq, to, piece, PieceType::kRook));
@@ -762,7 +765,7 @@ void CrazyhouseBoard::GeneratePseudoLegalMoves(
                 });
             GeneratePawnCaptureDestinations_(
                 sq, color, settings, true, /* include enpassant */
-                [&yield, &sq, &piece, &generating, this](const Square &to) {
+                [&yield, &sq, &piece, &generating, this](const Square& to) {
                   if (IsPawnPromotionRank(to)) {
                     YIELD(Move(sq, to, piece, PieceType::kQueen));
                     YIELD(Move(sq, to, piece, PieceType::kRook));
@@ -784,8 +787,8 @@ void CrazyhouseBoard::GeneratePseudoLegalMoves(
 #undef YIELD
 }
 
-void CrazyhouseBoard::GenerateLegalPawnCaptures(const MoveYieldFn &yield,
-                                           Color color) const {
+void CrazyhouseBoard::GenerateLegalPawnCaptures(const MoveYieldFn& yield,
+                                                Color color) const {
   // We do not need to filter moves that would result for King to move / stay
   // in check, so we can yield all pseudo legal moves
   if (king_in_check_allowed_) {
@@ -794,7 +797,7 @@ void CrazyhouseBoard::GenerateLegalPawnCaptures(const MoveYieldFn &yield,
     auto king_square = find(Piece{color, PieceType::kKing});
 
     GeneratePseudoLegalPawnCaptures(
-        [this, &king_square, &yield, color](const Move &move) {
+        [this, &king_square, &yield, color](const Move& move) {
           // See if the move is legal by applying, checking whether the king is
           // under attack, and undoing the move.
           auto board_copy = *this;
@@ -802,7 +805,7 @@ void CrazyhouseBoard::GenerateLegalPawnCaptures(const MoveYieldFn &yield,
 
           auto ks = king_square;
           if (!(move.IsDropMove()) && at(move.from).type == PieceType::kKing) {
-            ks == move.to;
+            ks = move.to;
           }
 
           if (board_copy.UnderAttack(ks, color)) {
@@ -816,7 +819,7 @@ void CrazyhouseBoard::GenerateLegalPawnCaptures(const MoveYieldFn &yield,
 }
 
 void CrazyhouseBoard::GeneratePseudoLegalPawnCaptures(
-    const MoveYieldFn &yield, Color color,
+    const MoveYieldFn& yield, Color color,
     PseudoLegalMoveSettings settings) const {
   bool generating = true;
 
@@ -828,11 +831,11 @@ void CrazyhouseBoard::GeneratePseudoLegalPawnCaptures(
   for (int8_t y = 0; y < board_size_ && generating; ++y) {
     for (int8_t x = 0; x < board_size_ && generating; ++x) {
       Square sq{x, y};
-      auto &piece = at(sq);
+      auto& piece = at(sq);
       if (piece.type == PieceType::kPawn && piece.color == color) {
         GeneratePawnCaptureDestinations_(
             sq, color, settings, true, /* include enpassant */
-            [&yield, &sq, &piece, &generating, this](const Square &to) {
+            [&yield, &sq, &piece, &generating, this](const Square& to) {
               if (IsPawnPromotionRank(to)) {
                 YIELD(Move(sq, to, piece, PieceType::kQueen));
                 YIELD(Move(sq, to, piece, PieceType::kRook));
@@ -851,12 +854,10 @@ void CrazyhouseBoard::GeneratePseudoLegalPawnCaptures(
 
 template <typename YieldFn>
 void CrazyhouseBoard::GenerateDropDestinations_(
-    Color player,
-    const PseudoLegalMoveSettings& settings,
+    Color player, const PseudoLegalMoveSettings& settings,
     const YieldFn& yield) const {
   // Get the pocket for the player
-  Pocket pocket =
-      (player == Color::kWhite ? white_pocket_ : black_pocket_);
+  Pocket pocket = (player == Color::kWhite ? white_pocket_ : black_pocket_);
 
   // Loop over drop-capable piece types
   for (PieceType ptype : Pocket::PieceTypes()) {
@@ -875,8 +876,9 @@ void CrazyhouseBoard::GenerateDropDestinations_(
 
         // Build the Move
         Move m;
-        m.from = Square{static_cast<int8_t>(board_size_),  // sentinel X
-              static_cast<int8_t>(pocket.Index(ptype))};  // piece index in Y
+        m.from = Square{
+            static_cast<int8_t>(board_size_),           // sentinel X
+            static_cast<int8_t>(pocket.Index(ptype))};  // piece index in Y
         m.to = sq;
 
         // Output the move
@@ -899,18 +901,16 @@ bool CrazyhouseBoard::IsBreachingMove(Move tested_move) const {
   // is considered an illegal move.
   if (piece.type == PieceType::kKing) return false;
 
-  SPIEL_DCHECK_TRUE(piece.type == PieceType::kQueen ||
-                    piece.type == PieceType::kRook ||
-                    piece.type == PieceType::kBishop ||
-                    piece.type == PieceType::kQueenP ||
-                    piece.type == PieceType::kRookP ||
-                    piece.type == PieceType::kBishopP);
+  SPIEL_DCHECK_TRUE(
+      piece.type == PieceType::kQueen || piece.type == PieceType::kRook ||
+      piece.type == PieceType::kBishop || piece.type == PieceType::kQueenP ||
+      piece.type == PieceType::kRookP || piece.type == PieceType::kBishopP);
 
   // The move is not breaching, if it is generated with
   // PseudoLegalMoveSettings::kAcknowledgeEnemyPieces
 
   bool is_breaching = true;
-  const auto check_breaching = [&](const Square &to) {
+  const auto check_breaching = [&](const Square& to) {
     if (to == tested_move.to) is_breaching = false;
   };
 
@@ -941,8 +941,7 @@ void CrazyhouseBoard::BreachingMoveToCaptureMove(Move* move) const {
   dx = std::min(1, dx);
   dy = std::max(-1, dy);
   dy = std::min(1, dy);
-  const Offset step{static_cast<int8_t>(dx),
-                    static_cast<int8_t>(dy)};
+  const Offset step{static_cast<int8_t>(dx), static_cast<int8_t>(dy)};
 
   Square sq;
   for (sq = move->from + step; sq != move->to; sq += step) {
@@ -976,7 +975,7 @@ bool CrazyhouseBoard::HasSufficientMaterial() const {
 
   for (int8_t y = 0; y < board_size_; ++y) {
     for (int8_t x = 0; x < board_size_; ++x) {
-      const auto &piece = at(Square{x, y});
+      const auto& piece = at(Square{x, y});
       // If we have a queen, rook, or pawn, we have sufficient material.
       // This is early exit for almost all positions. We check rooks first
       // because they tend to appear on the corners of boards.
@@ -1040,8 +1039,8 @@ bool CrazyhouseBoard::HasSufficientMaterial() const {
   return dark_bishop_exists && light_bishop_exists;
 }
 
-absl::optional<Move> CrazyhouseBoard::ParseMove(const std::string &move,
-                                           bool chess960) const {
+absl::optional<Move> CrazyhouseBoard::ParseMove(const std::string& move,
+                                                bool chess960) const {
   // First see if they are in the long form -
   // "anan" (eg. "e2e4") or "anana" (eg. "f7f8q")
   // SAN moves will never have this form because an SAN move that starts with
@@ -1061,20 +1060,19 @@ absl::optional<Move> CrazyhouseBoard::ParseMove(const std::string &move,
 }
 
 absl::optional<Move> CrazyhouseBoard::ParseSANMove(
-    const std::string &move_str) const {
+    const std::string& move_str) const {
   std::string move = move_str;
   auto drop_move = ParseDropMove(move);
   if (drop_move) {
     return drop_move;
   }
 
-
   if (move.empty()) return absl::nullopt;
 
   if (absl::StartsWith(move, "O-O-O")) {
     // Queenside / left castling.
     std::vector<Move> candidates;
-    GenerateLegalMoves([&candidates](const Move &move) {
+    GenerateLegalMoves([&candidates](const Move& move) {
       if (move.is_castling() && move.to.x == 2) {
         candidates.push_back(move);
       }
@@ -1088,7 +1086,7 @@ absl::optional<Move> CrazyhouseBoard::ParseSANMove(
   if (absl::StartsWith(move, "O-O")) {
     // Kingside / right castling.
     std::vector<Move> candidates;
-    GenerateLegalMoves([&candidates](const Move &move) {
+    GenerateLegalMoves([&candidates](const Move& move) {
       if (move.is_castling() && move.to.x == 6) {
         candidates.push_back(move);
       }
@@ -1179,11 +1177,10 @@ absl::optional<Move> CrazyhouseBoard::ParseSANMove(
 
   std::vector<Move> candidates;
   GenerateLegalMoves([&candidates, destination_square, piece_type, source_file,
-                      source_rank, promotion_type, this](const Move &move) {
+                      source_rank, promotion_type, this](const Move& move) {
     PieceType moving_piece_type = at(move.from).type;
     if (move.to == destination_square && moving_piece_type == piece_type &&
-        (!move.IsDropMove()) &&
-        (!source_file || move.from.x == *source_file) &&
+        (!move.IsDropMove()) && (!source_file || move.from.x == *source_file) &&
         (!source_rank || move.from.y == *source_rank) &&
         (!promotion_type || move.promotion_type == *promotion_type)) {
       candidates.push_back(move);
@@ -1198,7 +1195,7 @@ absl::optional<Move> CrazyhouseBoard::ParseSANMove(
 }
 
 absl::optional<Move> CrazyhouseBoard::ParseDropMove(
-    const std::string &move) const {
+    const std::string& move) const {
   if (move.empty()) {
     return absl::nullopt;
   }
@@ -1208,9 +1205,9 @@ absl::optional<Move> CrazyhouseBoard::ParseDropMove(
     char rank = move[3];
 
     // Validate square
-    if (file < 'a' || file >= ('a' + board_size_) ||
-       rank < '1' || rank >= ('1' + board_size_)) {
-       return absl::nullopt;
+    if (file < 'a' || file >= ('a' + board_size_) || rank < '1' ||
+        rank >= ('1' + board_size_)) {
+      return absl::nullopt;
     }
 
     // Parse piece type
@@ -1227,9 +1224,8 @@ absl::optional<Move> CrazyhouseBoard::ParseDropMove(
 
     // Construct drop move
     Move drop;
-    drop.from = Square{
-      static_cast<int8_t>(board_size_),
-      static_cast<int8_t>(Pocket::Index(ptype))};
+    drop.from = Square{static_cast<int8_t>(board_size_),
+                       static_cast<int8_t>(Pocket::Index(ptype))};
     drop.to = *to;
     drop.piece = Piece{to_play_, ptype};
     return drop;
@@ -1238,8 +1234,8 @@ absl::optional<Move> CrazyhouseBoard::ParseDropMove(
   return absl::nullopt;
 }
 
-absl::optional<Move> CrazyhouseBoard::ParseLANMove(const std::string &move,
-                                              bool chess960) const {
+absl::optional<Move> CrazyhouseBoard::ParseLANMove(const std::string& move,
+                                                   bool chess960) const {
   if (move.empty()) {
     return absl::nullopt;
   }
@@ -1247,7 +1243,6 @@ absl::optional<Move> CrazyhouseBoard::ParseLANMove(const std::string &move,
   if (drop_move) {
     return drop_move;
   }
-
 
   // Long algebraic notation moves (of the variant we care about) are in one of
   // two forms -
@@ -1283,18 +1278,17 @@ absl::optional<Move> CrazyhouseBoard::ParseLANMove(const std::string &move,
           at(*from).type == PieceType::kKing &&
           at(*to).type == PieceType::kRook) {
         std::vector<Move> candidates;
-        GenerateLegalMoves(
-            [&from, &candidates](const Move &move) {
-              if (move.from == *from && move.is_castling()) {
-                candidates.push_back(move);
-              }
-              return true;
-            });
+        GenerateLegalMoves([&from, &candidates](const Move& move) {
+          if (move.from == *from && move.is_castling()) {
+            candidates.push_back(move);
+          }
+          return true;
+        });
 
         Color moving_color = at(*from).color;
         for (const Move& move : candidates) {
-          auto maybe_castle_rook_sq = MaybeCastlingRookSquare(
-              moving_color, move.castle_dir);
+          auto maybe_castle_rook_sq =
+              MaybeCastlingRookSquare(moving_color, move.castle_dir);
           if (maybe_castle_rook_sq.has_value() &&
               *maybe_castle_rook_sq == *to) {
             return move;
@@ -1309,7 +1303,7 @@ absl::optional<Move> CrazyhouseBoard::ParseLANMove(const std::string &move,
       // Other regular moves.
       std::vector<Move> candidates;
       GenerateLegalMoves(
-          [&to, &from, &promotion_type, &candidates](const Move &move) {
+          [&to, &from, &promotion_type, &candidates](const Move& move) {
             if (move.from == *from && move.to == *to &&
                 (!promotion_type || (move.promotion_type == *promotion_type))) {
               candidates.push_back(move);
@@ -1320,11 +1314,10 @@ absl::optional<Move> CrazyhouseBoard::ParseLANMove(const std::string &move,
       if (chess960) {
         // Chess960: Remove the castling moves as we checked for them in the
         // special case above.
-        candidates.erase(std::remove_if(candidates.begin(), candidates.end(),
-                                       [](const Move &move) {
-                                         return move.is_castling();
-                                       }),
-                         candidates.end());
+        candidates.erase(
+            std::remove_if(candidates.begin(), candidates.end(),
+                           [](const Move& move) { return move.is_castling(); }),
+            candidates.end());
       }
 
       if (candidates.empty()) {
@@ -1345,7 +1338,7 @@ absl::optional<Move> CrazyhouseBoard::ParseLANMove(const std::string &move,
   SpielFatalError("All conditionals failed; this is a bug.");
 }
 
-void CrazyhouseBoard::ApplyMove(const Move &move) {
+void CrazyhouseBoard::ApplyMove(const Move& move) {
   // Skip applying a move if it's a pass.
   if (move == kPassMove) {
     if (to_play_ == Color::kBlack) ++move_number_;
@@ -1365,12 +1358,12 @@ void CrazyhouseBoard::ApplyMove(const Move &move) {
   Piece destination_piece = at(move.to);
 
   if (move.IsDropMove()) {
-      PieceType from_type = Pocket::DropPieceType(move.from.y);
-      moving_piece =  Piece{to_play_, from_type};
-      RemoveFromPocket(to_play_, from_type);
+    PieceType from_type = Pocket::DropPieceType(move.from.y);
+    moving_piece = Piece{to_play_, from_type};
+    RemoveFromPocket(to_play_, from_type);
   } else {
-     moving_piece = at(move.from);
-     set_square(move.from, kEmptyPiece);
+    moving_piece = at(move.from);
+    set_square(move.from, kEmptyPiece);
   }
 
   //  Must change move.from before move.to because in Chess960
@@ -1379,14 +1372,14 @@ void CrazyhouseBoard::ApplyMove(const Move &move) {
   set_square(move.to, moving_piece);
   // Increment pockets for capture.
   // When castling in 960 the king can stay in the same place.
-  if (destination_piece !=  kEmptyPiece && !move.is_castling()) {
-      PieceType dpt = destination_piece.type;
-      if (dpt == PieceType::kKing) {
-          std::cerr << "King capture from" <<
-            SquareToString(move.from) << std::endl;
-          SpielFatalError("King capture detected.");
-      }
-      AddToPocket(to_play_, dpt, insanity_);
+  if (destination_piece != kEmptyPiece && !move.is_castling()) {
+    PieceType dpt = destination_piece.type;
+    if (dpt == PieceType::kKing) {
+      std::cerr << "King capture from" << SquareToString(move.from)
+                << std::endl;
+      SpielFatalError("King capture detected.");
+    }
+    AddToPocket(to_play_, dpt, insanity_);
   }
 
   // Whether the move is irreversible for the purpose of the 50-moves rule. Note
@@ -1398,7 +1391,7 @@ void CrazyhouseBoard::ApplyMove(const Move &move) {
   // color, since in chess960 the king can castle with the rook in the
   // destination square.
   bool irreversible =
-      (moving_piece.type == PieceType::kPawn) ||        // pawn move
+      (moving_piece.type == PieceType::kPawn) ||  // pawn move
       (destination_piece.type != PieceType::kEmpty &&
        destination_piece.color != moving_piece.color);  // capture
   if (insanity_ > 0) {
@@ -1450,14 +1443,14 @@ void CrazyhouseBoard::ApplyMove(const Move &move) {
     int8_t y = to_play_ == Color::kWhite ? 0 : 7;
     if (move.to == Square{2, y}) {
       // left castle
-      const auto &maybe_rook_sq = castling_rights_[ToInt(to_play_)].left_castle;
+      const auto& maybe_rook_sq = castling_rights_[ToInt(to_play_)].left_castle;
       SPIEL_CHECK_TRUE(maybe_rook_sq.has_value());
       set_square(*maybe_rook_sq, kEmptyPiece);
       set_square(Square{2, y}, Piece{to_play_, PieceType::kKing});
       set_square(Square{3, y}, Piece{to_play_, PieceType::kRook});
     } else if (move.to == Square{6, y}) {
       // right castle
-      const auto &maybe_rook_sq =
+      const auto& maybe_rook_sq =
           castling_rights_[ToInt(to_play_)].right_castle;
       SPIEL_CHECK_TRUE(maybe_rook_sq.has_value());
       set_square(*maybe_rook_sq, kEmptyPiece);
@@ -1530,13 +1523,13 @@ void CrazyhouseBoard::ApplyMove(const Move &move) {
   SetToPlay(OppColor(to_play_));
 }
 
-bool CrazyhouseBoard::TestApplyMove(const Move &move) {
+bool CrazyhouseBoard::TestApplyMove(const Move& move) {
   Color color = to_play_;
   ApplyMove(move);
   return !UnderAttack(find(Piece{color, PieceType::kKing}), color);
 }
 
-bool CrazyhouseBoard::UnderAttack(const Square &sq, Color our_color) const {
+bool CrazyhouseBoard::UnderAttack(const Square& sq, Color our_color) const {
   SPIEL_CHECK_NE(sq, kInvalidSquare);
 
   bool under_attack = false;
@@ -1550,7 +1543,7 @@ bool CrazyhouseBoard::UnderAttack(const Square &sq, Color our_color) const {
   // whether we are moving into check, and we can be trying to move the king
   // into a square attacked by opponent king).
   GenerateKingDestinations_(
-      sq, our_color, [this, &under_attack, &opponent_color](const Square &to) {
+      sq, our_color, [this, &under_attack, &opponent_color](const Square& to) {
         if (at(to) == Piece{opponent_color, PieceType::kKing}) {
           under_attack = true;
         }
@@ -1562,7 +1555,7 @@ bool CrazyhouseBoard::UnderAttack(const Square &sq, Color our_color) const {
   // Rook moves (for rooks and queens)
   GenerateRookDestinations_(
       sq, our_color, PseudoLegalMoveSettings::kAcknowledgeEnemyPieces,
-      [this, &under_attack, &opponent_color](const Square &to) {
+      [this, &under_attack, &opponent_color](const Square& to) {
         if ((at(to) == Piece{opponent_color, PieceType::kRook}) ||
             (at(to) == Piece{opponent_color, PieceType::kQueen}) ||
             (at(to) == Piece{opponent_color, PieceType::kRookP}) ||
@@ -1577,7 +1570,7 @@ bool CrazyhouseBoard::UnderAttack(const Square &sq, Color our_color) const {
   // Bishop moves (for bishops and queens)
   GenerateBishopDestinations_(
       sq, our_color, PseudoLegalMoveSettings::kAcknowledgeEnemyPieces,
-      [this, &under_attack, &opponent_color](const Square &to) {
+      [this, &under_attack, &opponent_color](const Square& to) {
         if ((at(to) == Piece{opponent_color, PieceType::kBishop}) ||
             (at(to) == Piece{opponent_color, PieceType::kBishopP}) ||
             (at(to) == Piece{opponent_color, PieceType::kQueenP}) ||
@@ -1591,7 +1584,7 @@ bool CrazyhouseBoard::UnderAttack(const Square &sq, Color our_color) const {
 
   // Knight moves
   GenerateKnightDestinations_(
-      sq, our_color, [this, &under_attack, &opponent_color](const Square &to) {
+      sq, our_color, [this, &under_attack, &opponent_color](const Square& to) {
         if ((at(to) == Piece{opponent_color, PieceType::kKnight}) ||
             (at(to) == Piece{opponent_color, PieceType::kKnightP})) {
           under_attack = true;
@@ -1605,7 +1598,7 @@ bool CrazyhouseBoard::UnderAttack(const Square &sq, Color our_color) const {
   GeneratePawnCaptureDestinations_(
       sq, our_color, PseudoLegalMoveSettings::kAcknowledgeEnemyPieces,
       false /* no ep */,
-      [this, &under_attack, &opponent_color](const Square &to) {
+      [this, &under_attack, &opponent_color](const Square& to) {
         if (at(to) == Piece{opponent_color, PieceType::kPawn}) {
           under_attack = true;
         }
@@ -1697,11 +1690,11 @@ std::string CrazyhouseBoard::DebugString(bool shredder_fen) const {
 // King moves without castling.
 template <typename YieldFn>
 void CrazyhouseBoard::GenerateKingDestinations_(Square sq, Color color,
-                                           const YieldFn &yield) const {
+                                                const YieldFn& yield) const {
   static const std::array<Offset, 8> kOffsets = {
       {{1, 0}, {1, 1}, {1, -1}, {0, 1}, {0, -1}, {-1, 1}, {-1, 0}, {-1, -1}}};
 
-  for (const auto &offset : kOffsets) {
+  for (const auto& offset : kOffsets) {
     Square dest = sq + offset;
     if (InBoardArea(dest) && IsEmptyOrEnemy(dest, color)) {
       yield(dest);
@@ -1717,12 +1710,12 @@ void CrazyhouseBoard::GenerateKingDestinations_(Square sq, Color color,
 // king the rook is jumping over). In that case, it does not check for that
 // space being occupied to prevent the king from castling.
 bool CrazyhouseBoard::CanCastleBetween(Square from_sq, Square to_sq,
-                                  bool check_safe_from_opponent,
-                                  PseudoLegalMoveSettings settings,
-                                  Square exception_square) const {
+                                       bool check_safe_from_opponent,
+                                       PseudoLegalMoveSettings settings,
+                                       Square exception_square) const {
   SPIEL_DCHECK_EQ(from_sq.y, to_sq.y);
   const int y = from_sq.y;
-  const Color &our_color = at(from_sq).color;
+  const Color& our_color = at(from_sq).color;
 
   const int x_start = std::min(from_sq.x, to_sq.x);
   const int x_end = std::max(from_sq.x, to_sq.x);
@@ -1732,14 +1725,14 @@ bool CrazyhouseBoard::CanCastleBetween(Square from_sq, Square to_sq,
   // king moving into the same square).
   if (to_sq != exception_square && to_sq != from_sq) {
     if ((settings == PseudoLegalMoveSettings::kAcknowledgeEnemyPieces &&
-         IsEnemy(to_sq, our_color)) || IsFriendly(to_sq, our_color)) {
+         IsEnemy(to_sq, our_color)) ||
+        IsFriendly(to_sq, our_color)) {
       return false;
     }
   }
 
   for (int x = x_start; x <= x_end; ++x) {
-    Square test_square{static_cast<int8_t>(x),
-                       static_cast<int8_t>(y)};
+    Square test_square{static_cast<int8_t>(x), static_cast<int8_t>(y)};
     if (check_safe_from_opponent && UnderAttack(test_square, our_color))
       return false;
     if (settings == PseudoLegalMoveSettings::kAcknowledgeEnemyPieces &&
@@ -1755,9 +1748,9 @@ bool CrazyhouseBoard::CanCastleBetween(Square from_sq, Square to_sq,
 }
 
 template <typename YieldFn>
-void CrazyhouseBoard::GenerateCastlingDestinations_(Square sq, Color color,
-                                               PseudoLegalMoveSettings settings,
-                                               const YieldFn &yield) const {
+void CrazyhouseBoard::GenerateCastlingDestinations_(
+    Square sq, Color color, PseudoLegalMoveSettings settings,
+    const YieldFn& yield) const {
   // There are 8 conditions for castling -
   // 1. The rook involved must not have moved.
   // 2. The king must not have moved.
@@ -1790,7 +1783,7 @@ void CrazyhouseBoard::GenerateCastlingDestinations_(Square sq, Color color,
   const auto check_castling_conditions = [this, &sq, &color, &settings](
                                              Square king_sq,
                                              CastlingDirection dir) -> bool {
-    const auto &rights = castling_rights_[ToInt(color)];
+    const auto& rights = castling_rights_[ToInt(color)];
     Square rook_sq = dir == CastlingDirection::kLeft
                          ? rights.left_castle.value()
                          : rights.right_castle.value();
@@ -1844,17 +1837,17 @@ void CrazyhouseBoard::GenerateCastlingDestinations_(Square sq, Color color,
 }
 
 template <typename YieldFn>
-void CrazyhouseBoard::GenerateQueenDestinations_(Square sq, Color color,
-                                            PseudoLegalMoveSettings settings,
-                                            const YieldFn &yield) const {
+void CrazyhouseBoard::GenerateQueenDestinations_(
+    Square sq, Color color, PseudoLegalMoveSettings settings,
+    const YieldFn& yield) const {
   GenerateRookDestinations_(sq, color, settings, yield);
   GenerateBishopDestinations_(sq, color, settings, yield);
 }
 
 template <typename YieldFn>
-void CrazyhouseBoard::GenerateRookDestinations_(Square sq, Color color,
-                                           PseudoLegalMoveSettings settings,
-                                           const YieldFn &yield) const {
+void CrazyhouseBoard::GenerateRookDestinations_(
+    Square sq, Color color, PseudoLegalMoveSettings settings,
+    const YieldFn& yield) const {
   GenerateRayDestinations_(sq, color, settings, {1, 0}, yield);
   GenerateRayDestinations_(sq, color, settings, {-1, 0}, yield);
   GenerateRayDestinations_(sq, color, settings, {0, 1}, yield);
@@ -1862,9 +1855,9 @@ void CrazyhouseBoard::GenerateRookDestinations_(Square sq, Color color,
 }
 
 template <typename YieldFn>
-void CrazyhouseBoard::GenerateBishopDestinations_(Square sq, Color color,
-                                             PseudoLegalMoveSettings settings,
-                                             const YieldFn &yield) const {
+void CrazyhouseBoard::GenerateBishopDestinations_(
+    Square sq, Color color, PseudoLegalMoveSettings settings,
+    const YieldFn& yield) const {
   GenerateRayDestinations_(sq, color, settings, {1, 1}, yield);
   GenerateRayDestinations_(sq, color, settings, {-1, 1}, yield);
   GenerateRayDestinations_(sq, color, settings, {1, -1}, yield);
@@ -1873,8 +1866,8 @@ void CrazyhouseBoard::GenerateBishopDestinations_(Square sq, Color color,
 
 template <typename YieldFn>
 void CrazyhouseBoard::GenerateKnightDestinations_(Square sq, Color color,
-                                             const YieldFn &yield) const {
-  for (const auto &offset : kKnightOffsets) {
+                                                  const YieldFn& yield) const {
+  for (const auto& offset : kKnightOffsets) {
     Square dest = sq + offset;
     if (InBoardArea(dest) && IsEmptyOrEnemy(dest, color)) {
       yield(dest);
@@ -1884,9 +1877,9 @@ void CrazyhouseBoard::GenerateKnightDestinations_(Square sq, Color color,
 
 // Pawn moves without captures.
 template <typename YieldFn>
-void CrazyhouseBoard::GeneratePawnDestinations_(Square sq, Color color,
-                                           PseudoLegalMoveSettings settings,
-                                           const YieldFn &yield) const {
+void CrazyhouseBoard::GeneratePawnDestinations_(
+    Square sq, Color color, PseudoLegalMoveSettings settings,
+    const YieldFn& yield) const {
   int8_t y_direction = color == Color::kWhite ? 1 : -1;
   Square dest = sq + Offset{0, y_direction};
   if (InBoardArea(dest) &&
@@ -1911,7 +1904,7 @@ void CrazyhouseBoard::GeneratePawnDestinations_(Square sq, Color color,
 template <typename YieldFn>
 void CrazyhouseBoard::GeneratePawnCaptureDestinations_(
     Square sq, Color color, PseudoLegalMoveSettings settings, bool include_ep,
-    const YieldFn &yield) const {
+    const YieldFn& yield) const {
   int8_t y_direction = color == Color::kWhite ? 1 : -1;
   Square dest = sq + Offset{1, y_direction};
   if (InBoardArea(dest) &&
@@ -1932,9 +1925,9 @@ void CrazyhouseBoard::GeneratePawnCaptureDestinations_(
 
 template <typename YieldFn>
 void CrazyhouseBoard::GenerateRayDestinations_(Square sq, Color color,
-                                          PseudoLegalMoveSettings settings,
-                                          Offset offset_step,
-                                          const YieldFn &yield) const {
+                                               PseudoLegalMoveSettings settings,
+                                               Offset offset_step,
+                                               const YieldFn& yield) const {
   for (Square dest = sq + offset_step; InBoardArea(dest); dest += offset_step) {
     if (IsEmpty(dest)) {
       yield(dest);
@@ -1968,14 +1961,15 @@ std::string CrazyhouseBoard::ToUnicodeString() const {
 }
 
 char CrazyhouseBoard::ShredderCastlingRightChar(Color color,
-                                           CastlingDirection dir) const {
+                                                CastlingDirection dir) const {
   absl::optional<Square> maybe_rook_sq = MaybeCastlingRookSquare(color, dir);
   if (!maybe_rook_sq.has_value()) {
     return '-';
   }
   Square rook_sq = maybe_rook_sq.value();
-  std::string castling_files(color == Color::kWhite ?
-      kShredderWhiteCastlingFiles : kShredderBlackCastlingFiles);
+  std::string castling_files(color == Color::kWhite
+                                 ? kShredderWhiteCastlingFiles
+                                 : kShredderBlackCastlingFiles);
   return castling_files[rook_sq.x];
 }
 
@@ -2008,14 +2002,14 @@ std::string CrazyhouseBoard::ToFEN(bool shredder) const {
   std::string pockets;
 
   // white pockets: Pawn, Knight, Bishop, Rook, Queen indices 0..4
-for (Color color : {Color::kWhite, Color::kBlack}) {
-      const Pocket& pocket = (color == Color::kWhite) ?
-        white_pocket_ : black_pocket_;
-      for (PieceType ptype : Pocket::PieceTypes()) {
-          Piece pocket_piece{color, ptype};
-          char c = pocket_piece.ToString()[0];
-          pockets.append(pocket.Count(ptype), c);
-      }
+  for (Color color : {Color::kWhite, Color::kBlack}) {
+    const Pocket& pocket =
+        (color == Color::kWhite) ? white_pocket_ : black_pocket_;
+    for (PieceType ptype : Pocket::PieceTypes()) {
+      Piece pocket_piece{color, ptype};
+      char c = pocket_piece.ToString()[0];
+      pockets.append(pocket.Count(ptype), c);
+    }
   }
   if (!pockets.empty()) {
     absl::StrAppend(&fen, "[", pockets, "]");
@@ -2030,35 +2024,35 @@ for (Color color : {Color::kWhite, Color::kBlack}) {
 
   if (CastlingRight(Color::kWhite, CastlingDirection::kRight)) {
     castling_rights.push_back(
-        shredder ? ShredderCastlingRightChar(
-        Color::kWhite, CastlingDirection::kRight)
+        shredder ? ShredderCastlingRightChar(Color::kWhite,
+                                             CastlingDirection::kRight)
                  : 'K');
   }
   if (CastlingRight(Color::kWhite, CastlingDirection::kLeft)) {
     castling_rights.push_back(
-        shredder ? ShredderCastlingRightChar(
-        Color::kWhite, CastlingDirection::kLeft)
-                 : 'Q');
+        shredder
+            ? ShredderCastlingRightChar(Color::kWhite, CastlingDirection::kLeft)
+            : 'Q');
   }
   if (CastlingRight(Color::kBlack, CastlingDirection::kRight)) {
     castling_rights.push_back(
-        shredder ? ShredderCastlingRightChar(
-        Color::kBlack, CastlingDirection::kRight)
+        shredder ? ShredderCastlingRightChar(Color::kBlack,
+                                             CastlingDirection::kRight)
                  : 'k');
   }
   if (CastlingRight(Color::kBlack, CastlingDirection::kLeft)) {
     castling_rights.push_back(
-        shredder ? ShredderCastlingRightChar(
-        Color::kBlack, CastlingDirection::kLeft)
-                 : 'q');
+        shredder
+            ? ShredderCastlingRightChar(Color::kBlack, CastlingDirection::kLeft)
+            : 'q');
   }
 
   absl::StrAppend(&fen, castling_rights.empty() ? "-" : castling_rights);
 
   // ----- 4. En passant -----
   absl::StrAppend(&fen, " ");
-  absl::StrAppend(&fen,
-      EpSquare() == kInvalidSquare ? "-" : SquareToString(EpSquare()));
+  absl::StrAppend(
+      &fen, EpSquare() == kInvalidSquare ? "-" : SquareToString(EpSquare()));
 
   // ----- 5. Halfmove clock -----
   absl::StrAppend(&fen, " ", irreversible_move_counter_);
@@ -2071,8 +2065,7 @@ for (Color color : {Color::kWhite, Color::kBlack}) {
 
 // Used in Dark Chess (see games/dark_chess.{h,cc})
 std::string CrazyhouseBoard::ToDarkFEN(
-  const ObservationTable &observability_table,
-  Color color) const {
+    const ObservationTable& observability_table, Color color) const {
   std::string fen;
 
   // 1. encode the board.
@@ -2087,7 +2080,7 @@ std::string CrazyhouseBoard::ToDarkFEN(
         }
         fen.push_back('?');
       } else {
-        const Piece &piece = at(crazyhouse::Square{file, rank});
+        const Piece& piece = at(crazyhouse::Square{file, rank});
         if (piece == crazyhouse::kEmptyPiece) {
           ++num_empty;
         } else {
@@ -2115,21 +2108,21 @@ std::string CrazyhouseBoard::ToDarkFEN(
   std::string castling_rights;
   if (color == crazyhouse::Color::kWhite) {
     if (CastlingRight(crazyhouse::Color::kWhite,
-      crazyhouse::CastlingDirection::kRight)) {
-        castling_rights.push_back('K');
+                      crazyhouse::CastlingDirection::kRight)) {
+      castling_rights.push_back('K');
     }
     if (CastlingRight(crazyhouse::Color::kWhite,
-      crazyhouse::CastlingDirection::kLeft)) {
-        castling_rights.push_back('Q');
+                      crazyhouse::CastlingDirection::kLeft)) {
+      castling_rights.push_back('Q');
     }
   } else {
     if (CastlingRight(crazyhouse::Color::kBlack,
-      crazyhouse::CastlingDirection::kRight)) {
-        castling_rights.push_back('k');
+                      crazyhouse::CastlingDirection::kRight)) {
+      castling_rights.push_back('k');
     }
     if (CastlingRight(crazyhouse::Color::kBlack,
-      crazyhouse::CastlingDirection::kLeft)) {
-        castling_rights.push_back('q');
+                      crazyhouse::CastlingDirection::kLeft)) {
+      castling_rights.push_back('q');
     }
   }
   absl::StrAppend(&fen, castling_rights.empty() ? "-" : castling_rights);
@@ -2165,16 +2158,12 @@ std::string CrazyhouseBoard::ToDarkFEN(
 // we  will saturate the pocket piece count at 16,
 // although the actual piece count can go beyond that.
 static constexpr int kMaxPocketHashCount = 16;
-static const ZobristTableU64<2, 5, kMaxPocketHashCount + 1>
-    kPocketZobrist(/*seed=*/2825712);
+static const ZobristTableU64<2, 5, kMaxPocketHashCount + 1> kPocketZobrist(
+    /*seed=*/2825712);
 
-inline int HashCount(int n) {
-  return std::min(n, kMaxPocketHashCount);
-}
+inline int HashCount(int n) { return std::min(n, kMaxPocketHashCount); }
 
-void CrazyhouseBoard::AddToPocket(Color owner,
-                                  PieceType piece,
-                                  int count) {
+void CrazyhouseBoard::AddToPocket(Color owner, PieceType piece, int count) {
   Pocket& pocket = owner == Color::kWhite ? white_pocket_ : black_pocket_;
 
   for (int i = 0; i < count; ++i) {
@@ -2195,11 +2184,10 @@ void CrazyhouseBoard::AddToPocket(Color owner,
   }
 }
 
-void CrazyhouseBoard::RemoveFromPocket(Color owner,
-                                       PieceType piece) {
+void CrazyhouseBoard::RemoveFromPocket(Color owner, PieceType piece) {
   Pocket& pocket = owner == Color::kWhite ? white_pocket_ : black_pocket_;
   int old = pocket.Count(piece);
-  assert(old > 0);
+  SPIEL_CHECK_GT(old, 0);
 
   int new_ = old - 1;
 
@@ -2261,8 +2249,9 @@ int ToInt(CastlingDirection direction) {
   }
 }
 
-void CrazyhouseBoard::SetCastlingRight(Color side, CastlingDirection direction,
-                                  absl::optional<Square> maybe_rook_square) {
+void CrazyhouseBoard::SetCastlingRight(
+    Color side, CastlingDirection direction,
+    absl::optional<Square> maybe_rook_square) {
   static const ZobristTableU64<2, 2, 2> kZobristValues(/*seed=*/876387212);
 
   // Remove old value from hash (note that we only use bool for castling rights,
@@ -2289,7 +2278,7 @@ void CrazyhouseBoard::SetCastlingRight(Color side, CastlingDirection direction,
 }
 
 Square CrazyhouseBoard::FindRookForCastling(Color color,
-                                       CastlingDirection dir) const {
+                                            CastlingDirection dir) const {
   Square my_king = find(Piece{color, PieceType::kKing});
   Piece rook_to_find{color, PieceType::kRook};
   int canonical_x = dir == CastlingDirection::kLeft ? 0 : (board_size_ - 1);
@@ -2394,7 +2383,6 @@ void CrazyhouseBoard::SetEpSquare(Square sq) {
   ep_square_ = sq;
 }
 
-
 std::string DefaultFen(int board_size) {
   if (board_size == 8)
     return crazyhouse::kDefaultStandardFEN;
@@ -2413,14 +2401,11 @@ void Pocket::Increment(PieceType piece, int count) {
 
 void Pocket::Decrement(PieceType piece) {
   const std::size_t i = Index(piece);
-  assert(counts_[i] > 0);
+  SPIEL_CHECK_GT(counts_[i], 0);
   --counts_[i];
 }
 
-int Pocket::Count(PieceType piece) const {
-  return counts_[Index(piece)];
-}
-
+int Pocket::Count(PieceType piece) const { return counts_[Index(piece)]; }
 
 // A captured promoted piece reverts to being a pawn
 std::size_t Pocket::Index(PieceType ptype) {
@@ -2432,39 +2417,37 @@ std::size_t Pocket::Index(PieceType ptype) {
     case PieceType::kQueenP:
       return 0;
     case PieceType::kKnight:
-       return 1;
+      return 1;
     case PieceType::kBishop:
-       return 2;
+      return 2;
     case PieceType::kRook:
-       return 3;
+      return 3;
     case PieceType::kQueen:
       return 4;
     default: {
-       SpielFatalError(
-          absl::StrCat("Invalid PieceType for Pocket: ",
-                   static_cast<int>(ptype)));
+      SpielFatalError(absl::StrCat("Invalid PieceType for Pocket: ",
+                                   static_cast<int>(ptype)));
     }
-    return 0;  // never happens
+      return 0;  // never happens
   }
 }
 
 PieceType Pocket::DropPieceType(int y) {
   switch (y) {
     case 0:
-       return PieceType::kPawn;
+      return PieceType::kPawn;
     case 1:
-       return PieceType::kKnight;
+      return PieceType::kKnight;
     case 2:
-       return PieceType::kBishop;
+      return PieceType::kBishop;
     case 3:
-       return PieceType::kRook;
+      return PieceType::kRook;
     case 4:
-       return PieceType::kQueen;
+      return PieceType::kQueen;
     default:
       return PieceType::kEmpty;
   }
 }
-
 
 }  // namespace crazyhouse
 }  // namespace open_spiel

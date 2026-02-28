@@ -19,7 +19,7 @@
 
 namespace open_spiel {
 
-void init_pyspiel_games_gomoku(::pybind11::module &m);
+void init_pyspiel_games_gomoku(::pybind11::module& m);
 
 }  // namespace open_spiel
 

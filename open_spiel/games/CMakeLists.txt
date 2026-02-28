@@ -96,9 +96,9 @@ set(GAME_SOURCES
   go/go.h
   go/go_board.cc
   go/go_board.h
-	gomoku/gomoku.cc
-	gomoku/gomoku.h
-	gomoku/gomoku_grid.h
+  gomoku/gomoku.cc
+  gomoku/gomoku.h
+  gomoku/gomoku_grid.h
   goofspiel/goofspiel.cc
   goofspiel/goofspiel.h
   havannah/havannah.cc

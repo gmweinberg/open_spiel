@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "open_spiel/games/crazyhouse/crazyhouse.h"
+
 #include <sys/types.h>
 
 #include <algorithm>
@@ -31,9 +32,9 @@
 #include "open_spiel/abseil-cpp/absl/types/optional.h"
 #include "open_spiel/abseil-cpp/absl/types/span.h"
 #include "open_spiel/game_parameters.h"
+#include "open_spiel/games/chess/chess.h"
 #include "open_spiel/games/crazyhouse/crazyhouse_board.h"
 #include "open_spiel/games/crazyhouse/crazyhouse_common.h"
-#include "open_spiel/games/chess/chess.h"
 #include "open_spiel/observer.h"
 #include "open_spiel/spiel.h"
 #include "open_spiel/spiel_globals.h"
@@ -47,26 +48,25 @@ constexpr int kNumReversibleMovesToDraw = 100;
 constexpr int kNumRepetitionsToDraw = 3;
 
 // Facts about the game
-const GameType kGameType{/*short_name=*/"crazyhouse",
-                         /*long_name=*/"Crazyhouse",
-                         GameType::Dynamics::kSequential,
-                         GameType::ChanceMode::kDeterministic,
-                         GameType::Information::kPerfectInformation,
-                         GameType::Utility::kZeroSum,
-                         GameType::RewardModel::kTerminal,
-                         /*max_num_players=*/2,
-                         /*min_num_players=*/2,
-                         /*provides_information_state_string=*/true,
-                         /*provides_information_state_tensor=*/false,
-                         /*provides_observation_string=*/true,
-                         /*provides_observation_tensor=*/true,
-                         /*parameter_specification=*/
-                         {{"chess960", GameParameter(kDefaultChess960)},
-                          {"insanity", GameParameter(kDefaultInsanity)},
-                          {"sticky_promotions",
-                            GameParameter(kDefaultStickyPromotions)},
-                          {"king_of_hill",
-GameParameter(kDefaultKingOfHill)}}};
+const GameType kGameType{
+    /*short_name=*/"crazyhouse",
+    /*long_name=*/"Crazyhouse",
+    GameType::Dynamics::kSequential,
+    GameType::ChanceMode::kDeterministic,
+    GameType::Information::kPerfectInformation,
+    GameType::Utility::kZeroSum,
+    GameType::RewardModel::kTerminal,
+    /*max_num_players=*/2,
+    /*min_num_players=*/2,
+    /*provides_information_state_string=*/true,
+    /*provides_information_state_tensor=*/false,
+    /*provides_observation_string=*/true,
+    /*provides_observation_tensor=*/true,
+    /*parameter_specification=*/
+    {{"chess960", GameParameter(kDefaultChess960)},
+     {"insanity", GameParameter(kDefaultInsanity)},
+     {"sticky_promotions", GameParameter(kDefaultStickyPromotions)},
+     {"king_of_hill", GameParameter(kDefaultKingOfHill)}}};
 
 std::shared_ptr<const Game> Factory(const GameParameters& params) {
   return std::shared_ptr<const Game>(new CrazyhouseGame(params));
@@ -111,12 +111,10 @@ CrazyhouseState::CrazyhouseState(std::shared_ptr<const Game> game)
   const auto* g = ParentGame();
   auto maybe_board = CrazyhouseBoard::BoardFromFEN(
       kDefaultStandardFEN,  // fen
-      8,  // size
-      false,  // king in check allowed
-      false,  // allow pass move
-      g->Insanity(),
-      g->StickyPromotions(),
-      g->KingOfHill());
+      8,                    // size
+      false,                // king in check allowed
+      false,                // allow pass move
+      g->Insanity(), g->StickyPromotions(), g->KingOfHill());
   king_of_hill_ = g->KingOfHill();
   start_board_ = *maybe_board;
   current_board_ = start_board_;
@@ -124,15 +122,15 @@ CrazyhouseState::CrazyhouseState(std::shared_ptr<const Game> game)
 }
 
 CrazyhouseState::CrazyhouseState(std::shared_ptr<const Game> game,
-    const std::string& fen): State(game) {
+                                 const std::string& fen)
+    : State(game) {
   auto* g = static_cast<const CrazyhouseGame*>(game.get());
   specific_initial_fen_ = fen;
   int insanity = g->Insanity();
   bool sticky_promotions = g->StickyPromotions();
   king_of_hill_ = g->KingOfHill();
-  auto maybe_board = CrazyhouseBoard::BoardFromFEN(fen,
-    8, false, false,
-    insanity, sticky_promotions, king_of_hill_);
+  auto maybe_board = CrazyhouseBoard::BoardFromFEN(
+      fen, 8, false, false, insanity, sticky_promotions, king_of_hill_);
   SPIEL_CHECK_TRUE(maybe_board);
   start_board_ = *maybe_board;
   current_board_ = start_board_;
@@ -236,10 +234,9 @@ Action MoveToAction(const Move& move, int board_size) {
     int piece_index = move.from.y;
     int to_index = move.to.y * board_size + move.to.x;  // flatten 2D → 1D
     int num_squares = board_size * board_size;
-    int action_int = kFirstDropAction  + piece_index * num_squares + to_index;
+    int action_int = kFirstDropAction + piece_index * num_squares + to_index;
     return static_cast<Action>(action_int);
   }
-
 
   // Special-case for pass move.
   if (move == kPassMove) return kPassAction;
@@ -343,23 +340,18 @@ Move ActionToMove(const Action& action, const CrazyhouseBoard& board) {
     int idx = static_cast<int>(action) - kFirstDropAction;
 
     int piece_index = idx / num_squares;
-    int to_index    = idx % num_squares;
+    int to_index = idx % num_squares;
 
     Move m;
-    m.from = Square {
-        // x = board_size → indicates drop
-        // y = pieceIndex
-        static_cast<int8_t>(bs),
-        static_cast<int8_t>(piece_index)
-    };
+    m.from = Square{// x = board_size → indicates drop
+                    // y = pieceIndex
+                    static_cast<int8_t>(bs), static_cast<int8_t>(piece_index)};
 
-    m.to = Square{
-        static_cast<int8_t>(to_index % bs),
-        static_cast<int8_t>(to_index / bs)
-    };
+    m.to = Square{static_cast<int8_t>(to_index % bs),
+                  static_cast<int8_t>(to_index / bs)};
 
     // m.promotion = kNoPiece;
-        return m;
+    return m;
   }
 
   // Some chess variants (e.g. RBC) allow pass moves.
@@ -425,7 +417,7 @@ Move ActionToMove(const Action& action, const CrazyhouseBoard& board) {
 }
 
 std::string CrazyhouseState::ActionToString(Player player,
-     Action action) const {
+                                            Action action) const {
   if (player == kChancePlayerId) {
     // Chess960 has an initial chance node.
     SPIEL_CHECK_GE(action, 0);
@@ -437,7 +429,7 @@ std::string CrazyhouseState::ActionToString(Player player,
 }
 
 std::string CrazyhouseState::DebugString() const {
-    return current_board_.DebugString(ParentGame()->IsChess960());
+  return current_board_.DebugString(ParentGame()->IsChess960());
 }
 
 std::string CrazyhouseState::ToString() const {
@@ -466,7 +458,7 @@ std::string CrazyhouseState::ObservationString(Player player) const {
 }
 
 void CrazyhouseState::ObservationTensor(Player player,
-                                   absl::Span<float> values) const {
+                                        absl::Span<float> values) const {
   SPIEL_CHECK_GE(player, 0);
   SPIEL_CHECK_LT(player, num_players_);
 
@@ -516,9 +508,8 @@ void CrazyhouseState::ObservationTensor(Player player,
   constexpr int kMaxPocketCount = 16;  // safe upper bound
 
   for (Color color : {Color::kWhite, Color::kBlack}) {
-    const Pocket& pocket =
-      (color == Color::kWhite) ? Board().white_pocket_
-                               : Board().black_pocket_;
+    const Pocket& pocket = (color == Color::kWhite) ? Board().white_pocket_
+                                                    : Board().black_pocket_;
     for (PieceType ptype : Pocket::PieceTypes()) {
       int count = pocket.Count(ptype);
       count = std::min(count, kMaxPocketCount);
@@ -579,7 +570,7 @@ absl::optional<std::vector<double>> CrazyhouseState::MaybeFinalReturns() const {
   if (king_of_hill_) {
     auto next_to_play = ColorToPlayer(Board().ToPlay());
     auto just_played = OtherPlayer(next_to_play);
-    Piece the_king = Piece {PlayerToColor(just_played), PieceType::kKing};
+    Piece the_king = Piece{PlayerToColor(just_played), PieceType::kKing};
     Square king_square = Board().find(the_king);
 
     if (king_square.IsHillSquare()) {
@@ -639,17 +630,15 @@ std::string CrazyhouseState::StartFEN() const {
   return start_board_.ToFEN(ParentGame()->IsChess960());
 }
 
-
 CrazyhouseGame::CrazyhouseGame(const GameParameters& params)
-    : Game(kGameType, params), chess960_(ParameterValue<bool>("chess960")
-) {
+    : Game(kGameType, params), chess960_(ParameterValue<bool>("chess960")) {
   if (chess960_) {
     initial_fens_ = chess::Chess960StartingPositions();
     SPIEL_CHECK_EQ(initial_fens_.size(), 960);
   }
   insanity_ = ParameterValue<int>("insanity");
   sticky_promotions_ = ParameterValue<bool>("sticky_promotions");
-  king_of_hill_ =  ParameterValue<bool>("king_of_hill");
+  king_of_hill_ = ParameterValue<bool>("king_of_hill");
 }
 
 std::unique_ptr<State> CrazyhouseGame::DeserializeState(
