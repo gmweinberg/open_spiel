@@ -377,8 +377,18 @@ absl::optional<std::vector<double>> ShogiState::MaybeFinalReturns() const {
 		returns[OtherPlayer(next_to_play)] = WinUtility();
 		return returns;
   }
-
-
+  // check for entering king win
+	Color on_move = Board().ToPlay();
+	Color just_moved = OppColor(Board().ToPlay());
+	if (Board().KingInEnemyCamp(just_moved) && MaterialPoints(just_moved) >= 28) {
+     std::vector<double> returns(NumPlayers());
+     returns[ColorToPlayer(just_moved)] = WinUtility();
+     returns[ColorToPlayer(on_move)] = LossUtility();
+     return returns;
+	}
+	if (Board().KingInEnemyCamp(just_moved) && Board().KingInEnemyCamp(on_move)){
+      return std::vector<double>{DrawUtility(), DrawUtility()};
+	}
   return absl::nullopt;
 }
 
@@ -395,6 +405,10 @@ std::string ShogiState::Serialize() const {
 
 std::string ShogiState::StartSFEN() const {
   return start_board_.ToSFEN();
+}
+
+int ShogiState::MaterialPoints(Color player) const {
+		return current_board_.MaterialPoints(player);
 }
 
 ShogiGame::ShogiGame(const GameParameters& params)

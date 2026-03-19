@@ -165,6 +165,8 @@ class ShogiState : public State {
   // history.
   int NumRepetitions(const ShogiState& state) const;
 
+	int MaterialPoints(Color player) const;
+
   // Get the SFEN for this move and the list of moves in UCI format.
   std::pair<std::string, std::vector<std::string>> ExtractSFenAndMaybeMoves()
       const;

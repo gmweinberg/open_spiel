@@ -65,14 +65,6 @@ class GamesShogiTest(parameterized.TestCase):
       self.assertTrue(state.is_terminal())
     print("terminal?", state.is_terminal())
 
-  def dtest_kma(self):
-    game = pyspiel.load_game("shogi")
-    state = game.new_initial_state()
-    board = state.board()
-    for action in state.legal_actions():
-       move = shogi.action_to_move(action, board)
-       print(move.to_string())
-
   def test_repeat(self):
       """Repeat without perpetual check is a draw."""
       game = pyspiel.load_game("shogi")
@@ -109,6 +101,39 @@ class GamesShogiTest(parameterized.TestCase):
               break
       self.assertTrue(state.is_terminal())
       self.assertEqual(state.returns(), [-1.0, 1.0])
+
+  def test_check_drop(self):
+    """It is legal to drap a pawn wit check but not with checkmate."""
+    sfen = "lnsg1g+R2/r6+P1/2pppp2p/6pk1/1p6P/p5P2/PPPPPPN2/1B7/LNSGKGS1L b PLNSB 15"
+    game = pyspiel.load_game("shogi")
+    state = game.new_initial_state(sfen)
+    action = state.parse_move_to_action("P*2e")
+    self.assertTrue(action not in state.legal_actions())
+    apply_legal(state, '3g4e')
+    apply_legal(state, '7c7d')
+    action = state.parse_move_to_action("P*2e")
+    self.assertTrue(action in state.legal_actions())
+
+  def test_penetrating_king(self):
+    """Penetrating a king to the promotion zone is a win if the penetrating player
+       has sufficiet material.
+       If both kings penetrate and neother has sufficiet material the game is
+       drawn."""
+    game = pyspiel.load_game("shogi")
+    sfen =  "ln4+B1+R/1k2g4/3p1p2p/7K1/p8/5P3/P2+sP2PP/9/LNSG1GSNL b 5PLNSGBR4p 24"
+    state = game.new_initial_state(sfen)
+    apply_legal(state, '2d2c')
+    self.assertTrue(state.is_terminal())
+    self.assertEqual(state.returns(), [1.0, -1.0])
+    sfen = "lnsg1gsnl/1r7/pp1ppp1Kp/9/2p5P/2k3P2/PPBPPP1P1/7R1/LNSG1GSNL w 2PBp 10"
+    state = game.new_initial_state(sfen)
+    apply_legal(state, '7f8g')
+    self.assertTrue(state.is_terminal())
+    self.assertEqual(state.returns(), [0.0, 0.0])
+
+
+
+
 
 if __name__ == "__main__":
   absltest.main()

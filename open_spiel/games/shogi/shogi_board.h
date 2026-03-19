@@ -214,6 +214,8 @@ static inline constexpr std::array<PieceType, kNumPieceTypes> kPieceTypes = {
 PieceType PromotedType(PieceType type);
 PieceType UnpromotedType(PieceType type);
 bool IsPromoted(PieceType type);
+int PieceValue(PieceType pt);
+
 
 // Case-insensitive.
 absl::optional<PieceType> PieceTypeFromChar(char c);
@@ -350,21 +352,29 @@ class ShogiBoard {
   Square find(const Piece& piece) const;
 
   using MoveYieldFn = std::function<bool(const Move&)>;
-	void GeneratePseudoLegalMoves(const MoveYieldFn& yield, Color color) const;
-  void GenerateLegalMoves(const MoveYieldFn& yield) const {
-    GenerateLegalMoves(yield, to_play_);
+	void GeneratePseudoLegalMoves(const MoveYieldFn& yield, Color color,
+			bool skip_drops=false) const;
+
+
+
+  void GenerateLegalMoves(const MoveYieldFn& yield,
+                        bool skip_drops = false) const {
+    GenerateLegalMoves(yield, to_play_, skip_drops);
   }
-  void GenerateLegalMoves(const MoveYieldFn& yield, Color color) const;
+
+  void GenerateLegalMoves(const MoveYieldFn& yield,
+                        Color color,
+                        bool skip_drops = false) const;
 
   Pocket white_pocket_;  // counts of pocket pieces by type
   Pocket black_pocket_;
 
-  bool HasLegalMoves() const {
+  bool HasLegalMoves(bool skip_drops=false) const {
     bool found = false;
     GenerateLegalMoves([&found](const Move&) {
       found = true;
       return false;  // We don't need any more moves.
-    });
+    }, skip_drops);
     return found;
   }
 
@@ -437,10 +447,14 @@ class ShogiBoard {
     return UnderAttack(find(Piece{to_play_, PieceType::kKing}), to_play_);
   }
 
+	bool KingInEnemyCamp(Color player) const;
+
 
   uint64_t HashValue() const { return zobrist_hash_; }
 
   std::string DebugString(bool shredder_fen = false) const;
+
+	int MaterialPoints(Color player) const;
 
   // Constructs a string describing the chess board position in Forsyth-Edwards
   // Notation. https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation

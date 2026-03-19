@@ -83,6 +83,20 @@ bool IsPromoted(PieceType type){
 	return UnpromotedType(type) != PieceType::kEmpty;
 }
 
+int PieceValue(PieceType pt) {
+  switch (pt) {
+    case PieceType::kRook:
+    case PieceType::kBishop:
+    case PieceType::kRookP:
+    case PieceType::kBishopP:
+      return 5;
+    case PieceType::kKing:
+      return 0;
+    default:
+      return 1;
+  }
+}
+
 
 bool IsMoveCharacter(char c) {
   return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
@@ -341,7 +355,8 @@ Square ShogiBoard::find(const Piece& piece) const {
 }
 
 void ShogiBoard::GenerateLegalMoves(const MoveYieldFn& yield,
-                                         Color color) const {
+                                         Color color,
+																				 bool skip_drops) const {
 	// Do not allow king in check
   auto king_square = find(Piece{color, PieceType::kKing});
 
@@ -362,20 +377,20 @@ void ShogiBoard::GenerateLegalMoves(const MoveYieldFn& yield,
 					return yield(move);
 				}
 			},
-			color);
+			color, skip_drops);
 }
 
 
 void ShogiBoard::GeneratePseudoLegalMoves(
-    const MoveYieldFn& yield, Color color) const {
+    const MoveYieldFn& yield, Color color,
+		bool skip_drops) const {
   bool generating = true;
 
 #define YIELD(move)     \
   if (!yield(move)) {   \
     generating = false; \
   }
-
-  GenerateDropDestinations_(color, yield);
+  if (!skip_drops) GenerateDropDestinations_(color, yield);
 
   for (int8_t y = 0; y < kBoardSize && generating; ++y) {
     for (int8_t x = 0; x < kBoardSize && generating; ++x) {
@@ -515,6 +530,7 @@ void ShogiBoard::GenerateDropDestinations_(
 
     for (int8_t y = 0; y < kBoardSize; ++y) {
       for (int8_t x = 0; x < kBoardSize; ++x) {
+				bool pawn_already = false;
         Square sq{x, y};
 
         // Only drop on empty squares
@@ -523,9 +539,8 @@ void ShogiBoard::GenerateDropDestinations_(
         // Cannot drop pieces that will never move
 				if (StuckPiece(player, ptype, y)) continue;
 				// check if already a pawn in column
-				bool pawn_already = false;
 				if (ptype == PieceType::kPawn){
-					for (int8_t y1 = 0; y1 < kBoardSize; ++y) {
+					for (int8_t y1 = 0; y1 < kBoardSize; ++y1) {
 						Piece there = at(Square{x, y1});
 						if (there == Piece{player, PieceType::kPawn}){
 							pawn_already = true;
@@ -543,7 +558,7 @@ void ShogiBoard::GenerateDropDestinations_(
 							Move dropMove = Move({-1, -1},  {x, y},
 									Piece{player, PieceType::kPawn}, false, true);
 							board_copy.ApplyMove(dropMove);
-							if (!board_copy.HasLegalMoves()) continue;
+							if (!board_copy.HasLegalMoves(true)) continue;
 						}
 				}
         // Build the Move
@@ -710,14 +725,13 @@ void ShogiBoard::ApplyMove(const Move& move) {
 
   set_square(move.to, moving_piece);
   // Increment pockets for capture.
+	// A king capture never happens, but the test for checkmate after a pawn drop
+	// looks at response moves after a king check.
   if (destination_piece != kEmptyPiece) {
     PieceType dpt = destination_piece.type;
-    if (dpt == PieceType::kKing) {
-      std::cerr << "King capture from" << move.from.ToString()
-                << std::endl;
-      SpielFatalError("King capture detected.");
+    if (dpt != PieceType::kKing) {
+      AddToPocket(to_play_, dpt);
     }
-    AddToPocket(to_play_, dpt);
   }
 
   if (to_play_ == Color::kWhite) {
@@ -1193,6 +1207,43 @@ void ShogiBoard::SetToPlay(Color c) {
   zobrist_hash_ ^= kZobristValues[ToInt(to_play_)];
   zobrist_hash_ ^= kZobristValues[ToInt(c)];
   to_play_ = c;
+}
+
+bool ShogiBoard::KingInEnemyCamp(Color player) const {
+  Square king_sq = find(Piece{player, PieceType::kKing});
+  if (player == Color::kBlack) {
+    return king_sq.y >= kBoardSize - 3;  // ranks 6,7,8
+  }
+  return king_sq.y <= 2;               // ranks 0,1,2
+}
+
+int ShogiBoard::MaterialPoints(Color player) const {
+  int total = 0;
+
+  // Board pieces (only those in enemy camp)
+  for (int8_t y = 0; y < kBoardSize; ++y) {
+    for (int8_t x = 0; x < kBoardSize; ++x) {
+      Square sq{x, y};
+      Piece p = at(sq);
+      if (p.color != player) continue;
+      if (p.type == PieceType::kKing) continue;
+
+      if (InPromoZone(player, sq.y)) {
+        total += PieceValue(p.type);
+      }
+    }
+  }
+
+  // Pocket pieces (all count)
+  const Pocket& pocket =
+      (player == Color::kWhite ? white_pocket_ : black_pocket_);
+
+  for (PieceType pt : Pocket::PieceTypes()) {
+    int count = pocket.Count(pt);
+    total += count * PieceValue(pt);
+  }
+
+  return total;
 }
 
 
