@@ -47,6 +47,8 @@ set(PYTHON_BINDINGS ${PYTHON_BINDINGS}
   pybind11/games_blackjack.h
   pybind11/games_bridge.cc
   pybind11/games_bridge.h
+  pybind11/games_catch.cc
+  pybind11/games_catch.h
   pybind11/games_chess.cc
   pybind11/games_chess.h
   pybind11/games_crazyhouse.cc
@@ -208,6 +210,7 @@ set(PYTHON_TESTS ${PYTHON_TESTS}
   algorithms/infostate_tree_test.py
   algorithms/mcts_agent_test.py
   algorithms/mcts_test.py
+  algorithms/minimax_solver_test.py
   algorithms/minimax_test.py
   algorithms/nfg_utils_test.py
   algorithms/noisy_policy_test.py
@@ -240,6 +243,7 @@ set(PYTHON_TESTS ${PYTHON_TESTS}
   games/dynamic_routing_test.py
   games/dynamic_routing_utils_test.py
   games/hangman_test.py
+  games/heuristics_test.py
   games/liars_poker_test.py
   games/pokerkit_wrapper_test.py
   games/team_dominoes_test.py
@@ -259,6 +263,7 @@ set(PYTHON_TESTS ${PYTHON_TESTS}
   tests/games_bargaining_test.py
   tests/games_blackjack_test.py
   tests/games_bridge_test.py
+  tests/games_catch_test.py
   tests/games_chess_test.py
   tests/games_connect_four_test.py
   tests/games_crazy_eights_test.py
@@ -276,6 +281,7 @@ set(PYTHON_TESTS ${PYTHON_TESTS}
   tests/pyspiel_test.py
   tests/rl_environment_test.py
   tests/sampled_stochastic_games_test.py
+  tests/sgf_reader_test.py
   tests/tensor_game_utils_test.py
   utils/file_logger_test.py
   utils/lru_cache_test.py
@@ -318,6 +324,7 @@ if (OPEN_SPIEL_ENABLE_PYTORCH)
       pytorch/boltzmann_dqn_pytorch_test.py
       pytorch/nfsp_pytorch_test.py
       pytorch/deep_cfr_pytorch_test.py
+      pytorch/escher_test.py
       pytorch/losses/rl_losses_pytorch_test.py
       pytorch/policy_gradient_pytorch_test.py
       pytorch/ppo_pytorch_test.py
