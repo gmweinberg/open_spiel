@@ -90,11 +90,10 @@ void open_spiel::init_pyspiel_games_shogi(py::module& m) {
       .def("to_sfen", &ShogiBoard::ToSFEN);
 
   py::classh<ShogiState, State>(m, "ShogiState")
-      .def("board", [](const ShogiState& s) { return s.Board(); })
+      .def("board", py::overload_cast<>(&ShogiState::Board))
       .def("debug_string", &ShogiState::DebugString)
       .def("is_repetition_end", &ShogiState::IsRepetitionEnd)
-      .def("moves_history", [](const ShogiState& s)
-        { return s.MovesHistory(); })
+      .def("moves_history", py::overload_cast<>(&ShogiState::MovesHistory))
       .def("num_repetitions", &ShogiState::NumRepetitions)
       .def("parse_move_to_action", &ShogiState::ParseMoveToAction)
       .def("start_sfen", &ShogiState::StartSFEN)
@@ -111,15 +110,18 @@ void open_spiel::init_pyspiel_games_shogi(py::module& m) {
                 game_and_state.second.release());
           }));
 
-  py::class_<ShogiGame, Game, std::shared_ptr<ShogiGame>>(m, "ShogiGame")
+  py::classh<ShogiGame, Game>(m, "ShogiGame")
+    // Pickle support
     .def(py::pickle(
-        [](std::shared_ptr<const ShogiGame> game) {  // __getstate__
-          return game->ToString();
-        },
-        [](const std::string& data) {  // __setstate__
-          return std::dynamic_pointer_cast<ShogiGame>(
-              std::const_pointer_cast<Game>(LoadGame(data)));
-        }));
+      [](std::shared_ptr<const ShogiGame> game) {  // __getstate__
+        return game->ToString();
+      },
+      [](const std::string& data) {  // __setstate__
+			  return std::dynamic_pointer_cast<ShogiGame>(
+					std::const_pointer_cast<Game>(LoadGame(data)));
+		}));
+
+
 
   shogi.def("action_to_move", &shogi::ActionToMove, py::arg("action"),
                  py::arg("board"));
