@@ -1106,7 +1106,7 @@ std::string ShogiBoard::ToSFEN() const {
     sfen += '-';
   } else {
     for (bool upper : {true, false}) {
-      Pocket pocket = upper ? black_pocket_ : white_pocket_;
+      const Pocket& pocket = upper ? black_pocket_ : white_pocket_;
       for (PieceType pt : Pocket::PieceTypes()) {
         int count = pocket.Count(pt);
         if (count > 0) {

@@ -111,18 +111,15 @@ void open_spiel::init_pyspiel_games_shogi(py::module& m) {
                 game_and_state.second.release());
           }));
 
-  py::classh<ShogiGame, Game>(m, "ShogiGame")
-      // Pickle support
+  py::class_<ShogiGame, Game, std::shared_ptr<ShogiGame>>(m, "ShogiGame")
     .def(py::pickle(
-      [](const ShogiState& state) {
-        return SerializeGameAndState(*state.GetGame(), state);
-      },
-      [](const std::string& data) {
-        auto game_and_state = DeserializeGameAndState(data);
-        auto* ptr = dynamic_cast<ShogiState*>(game_and_state.second.release());
-        SPIEL_CHECK_TRUE(ptr != nullptr);
-        return std::unique_ptr<ShogiState>(ptr);
-      }));
+        [](std::shared_ptr<const ShogiGame> game) {  // __getstate__
+          return game->ToString();
+        },
+        [](const std::string& data) {  // __setstate__
+          return std::dynamic_pointer_cast<ShogiGame>(
+              std::const_pointer_cast<Game>(LoadGame(data)));
+        }));
 
   shogi.def("action_to_move", &shogi::ActionToMove, py::arg("action"),
                  py::arg("board"));
