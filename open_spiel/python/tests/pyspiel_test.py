@@ -50,6 +50,7 @@ EXPECTED_MANDATORY_GAMES = frozenset([
     "chat_game",  # python game locating in python/games/chat_games/
     "checkers",
     "chess",
+    "cinese_checkers",
     "cliff_walking",
     "clobber",
     "coin_game",

@@ -35,6 +35,8 @@ set(GAME_SOURCES
   chess/chess_common.cc
   chess/chess_common.h
   chess/chess960_starting_positions.cc
+  chinese_checkers/chinese_checkers.cc
+  chinese_checkers/chinese_checkers.h
   cliff_walking/cliff_walking.cc
   cliff_walking/cliff_walking.h
   clobber/clobber.cc
@@ -370,6 +372,10 @@ add_test(checkers_test checkers_test)
 add_executable(chess_test chess/chess_test.cc ${OPEN_SPIEL_OBJECTS}
                $<TARGET_OBJECTS:tests>)
 add_test(chess_test chess_test)
+
+add_executable(chinese_checkers_test chinese_checkers/chinese_checkers_test.cc ${OPEN_SPIEL_OBJECTS}
+               $<TARGET_OBJECTS:tests>)
+add_test(chinese_checkers_test chinese_checkers_test)
 
 add_executable(cliff_walking_test cliff_walking/cliff_walking_test.cc ${OPEN_SPIEL_OBJECTS}
                $<TARGET_OBJECTS:tests>)
