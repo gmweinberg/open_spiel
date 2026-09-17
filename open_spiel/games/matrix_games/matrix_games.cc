@@ -209,8 +209,10 @@ const GameType kGameType{
 
 std::shared_ptr<const Game> Factory(const GameParameters& params) {
   return std::shared_ptr<const Game>(
+      // new MatrixGame(kGameType, params, {"Cooperate", "Defect"},
+      //               {"Cooperate", "Defect"}, {3, 0, 10, 1}, {5, 10, 0, 1}));
       new MatrixGame(kGameType, params, {"Cooperate", "Defect"},
-                     {"Cooperate", "Defect"}, {5, 0, 10, 1}, {5, 10, 0, 1}));
+                     {"Cooperate", "Defect"}, {3, 0, 5, 1}, {3, 5, 0, 1}));
 }
 
 REGISTER_SPIEL_GAME(kGameType, Factory);

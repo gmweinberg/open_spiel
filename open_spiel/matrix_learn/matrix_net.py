@@ -14,10 +14,7 @@ class MatrixNet(nn.Module):
 
         self.policy_head = nn.Linear(hidden_size, 2)
 
-        self.value_head = nn.Sequential(
-            nn.Linear(hidden_size, 1),
-            nn.Tanh(),
-        )
+        self.value_head = nn.Linear(hidden_size, 1)
 
     def forward(self, x):
         x = self.body(x)

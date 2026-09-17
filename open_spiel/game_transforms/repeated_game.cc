@@ -54,7 +54,11 @@ const GameType kGameType{
       GameParameter(GameParameter::Type::kGame, /*is_mandatory=*/true)},
      {"num_repetitions",
       GameParameter(GameParameter::Type::kInt, /*is_mandatory=*/true)},
-     {"recall", GameParameter(kDefaultRecall)}},
+     {"recall", GameParameter(kDefaultRecall)},
+		 {"cumulative", GameParameter(GameParameter::Type::kBool)},
+		 {"decay", GameParameter(GameParameter::Type::kDouble)},
+		 {"show_self_payoffs",  GameParameter(GameParameter::Type::kBool)},
+		 {"show_other_payoffs",  GameParameter(GameParameter::Type::kBool)}},
     /*default_loadable=*/false,
     /*provides_factored_observation_string=*/false,
     /*is_concrete=*/false};
