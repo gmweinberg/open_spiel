@@ -7,10 +7,13 @@ import pyspiel
 
 class TFTBot(pyspiel.Bot):
     """tit for tat"""
-    def __init__(self, player_id=0):
+    def __init__(self, player_id=0, name=None):
         super().__init__()
         self.player_id = player_id
-        self.name = "TitForTat"
+        if name is None:
+            self.name = "TitForTat"
+        else:
+            self.name = name
 
 
     def step_with_policy(self, state):
@@ -37,11 +40,14 @@ class TFTBot(pyspiel.Bot):
 
 class GrimBot(pyspiel.Bot):
     """Grim Trigger (unforgiving)"""
-    def __init__(self, player_id=0):
+    def __init__(self, player_id=0, name=None):
         super().__init__()
         self.player_id = player_id
         self.grim = False
-        self.name = "GrimTrigger"
+        if name is None:
+            self.name = "GrimTrigger"
+        else:
+            self.name = name
 
 
     def step_with_policy(self, state):

@@ -6,14 +6,17 @@
 import pyspiel
 
 class CycleBot(pyspiel.Bot):
-    def __init__(self, cycle=None):
+    def __init__(self, cycle=None, name=None):
         super().__init__()
         if cycle is None:
             self.cycle = [0]
         else:
             self.cycle = list(cycle)
         self.offset = 0
-        self.name = "CycleBot" + ''.join(str(elm) for elm in self.cycle)
+        if name is None:
+            self.name = "CycleBot" + ''.join(str(elm) for elm in self.cycle)
+        else:
+            self.name = name
 
 
     def step_with_policy(self, state):
@@ -31,6 +34,9 @@ class CycleBot(pyspiel.Bot):
 
     def restart_at(self, state):
         self.offset = state.move_number() % len(self.cycle)
+
+    def restart(self):
+        self.offset = 0
 
 
 
