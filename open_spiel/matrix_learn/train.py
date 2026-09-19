@@ -95,6 +95,7 @@ def train_old(game, net, bots, optimizer):
 
     for bot in bots:
         state = game.new_initial_state()
+        bot.restart()
         rounds = 0
         while not state.is_terminal():
             bot_action = bot.step(state)
