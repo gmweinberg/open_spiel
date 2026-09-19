@@ -113,13 +113,17 @@ def train_old(game, net, bots, optimizer):
             state.apply_actions([action.item(), bot_action])
 
             reward = state.rewards()[player_id]
-            advantage = reward - value
+            advantage = (reward - value).detach()
             policy_loss = -log_prob * advantage
             value_loss = (value - reward) ** 2
             loss = policy_loss + value_loss
             losses.append(loss)
             rounds += 1
         score += state.returns()[player_id]
+    optimizer.zero_grad()
+    loss = torch.stack(losses).mean()
+    loss.backward()
+    optimizer.step()
     print("average score", score / (len(bots) * rounds))
 
 
@@ -155,7 +159,7 @@ if __name__ == '__main__':
     net = MatrixNet(input_size)
     optimizer = torch.optim.Adam(
        net.parameters(),
-       lr=0.001,
+       lr=0.01,
     )
     for iteration in range(args.iter):
         #train_iteration(game, net, bots, optimizer, explore=8)
