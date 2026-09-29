@@ -21,8 +21,9 @@
 #include "open_spiel/spiel.h"
 #include "open_spiel/spiel_utils.h"
 
-// Allows adding extra information to the observation tensor
-// or information state tensor. Adding nformation will flatten a tensor
+// Allows adding extra information to the observation tensor, 
+// observation string, information state tensor, or information stat string.
+// Adding tensor information will flatten a tensor
 // if it was not already flat.
 
 namespace open_spiel {
@@ -49,6 +50,9 @@ class ExtraInfoState : public WrappedState {
 	void InformationStateTensor(Player player,
         absl::Span<float> values) const override;
 
+  std::string ObservationString(Player player) const override;
+
+  std::string InformationStateString(Player player) const override;
 
 	void SetExtraObservationTensor(
 			Player player, const std::vector<float>& values);
@@ -61,10 +65,22 @@ class ExtraInfoState : public WrappedState {
 
 	void SetExtraInformationStateTensor(
 			const std::vector<float>& values);
+
+	void SetExtraInformationStateString(Player player,
+                                    const std::string& value);
+
+  void SetExtraObservationString(const std::string& value);
+
+	void SetExtraObservationString(Player player,
+                                    const std::string& value);
+
+  void SetExtraInformationStateString(const std::string& value);
 
   private:
 	 std::vector<std::vector<float>> extra_information_tensor_;
 	 std::vector<std::vector<float>> extra_observation_tensor_;
+	 std::vector<std::string> extra_observation_string_;
+	 std::vector<std::string> extra_information_state_string_;
 };
 
 class ExtraInfoGame : public WrappedGame {

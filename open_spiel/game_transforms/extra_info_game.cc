@@ -74,12 +74,15 @@ ExtraInfoState::ExtraInfoState(
           std::vector<float>(extra_information_tensor_size, 0.0f)),
       extra_observation_tensor_(
           game->NumPlayers(),
-          std::vector<float>(extra_observation_tensor_size, 0.0f)) {}
+          std::vector<float>(extra_observation_tensor_size, 0.0f)),
+			extra_observation_string_(game->NumPlayers()),
+			extra_information_state_string_(game->NumPlayers()){}
 
 
 void ExtraInfoState::SetExtraObservationTensor(
     Player player, const std::vector<float>& values) {
   SPIEL_CHECK_GE(player, 0);
+  SPIEL_CHECK_LT(player, game_->NumPlayers());
   SPIEL_CHECK_LT(player, extra_observation_tensor_.size());
   SPIEL_CHECK_EQ(values.size(), extra_observation_tensor_[player].size());
 
@@ -96,6 +99,7 @@ void ExtraInfoState::SetExtraObservationTensor(
 void ExtraInfoState::SetExtraInformationStateTensor(
     Player player, const std::vector<float>& values) {
   SPIEL_CHECK_GE(player, 0);
+  SPIEL_CHECK_LT(player, game_->NumPlayers());
   SPIEL_CHECK_LT(player, extra_information_tensor_.size());
   SPIEL_CHECK_EQ(values.size(), extra_information_tensor_[player].size());
 
@@ -106,6 +110,34 @@ void ExtraInfoState::SetExtraInformationStateTensor(
     const std::vector<float>& values) {
   for (Player player = 0; player < game_->NumPlayers(); ++player) {
     SetExtraInformationStateTensor(player, values);
+  }
+}
+
+void ExtraInfoState::SetExtraObservationString(
+    Player player, const std::string& value) {
+  SPIEL_CHECK_GE(player, 0);
+  SPIEL_CHECK_LT(player, game_->NumPlayers());
+  extra_observation_string_[player] = value;
+}
+
+void ExtraInfoState::SetExtraObservationString(
+    const std::string& value) {
+  for (Player player = 0; player < game_->NumPlayers(); ++player) {
+    SetExtraObservationString(player, value);
+  }
+}
+
+void ExtraInfoState::SetExtraInformationStateString(
+    Player player, const std::string& value) {
+  SPIEL_CHECK_GE(player, 0);
+  SPIEL_CHECK_LT(player, game_->NumPlayers());
+  extra_information_state_string_[player] = value;
+}
+
+void ExtraInfoState::SetExtraInformationStateString(
+    const std::string& value) {
+  for (Player player = 0; player < game_->NumPlayers(); ++player) {
+    SetExtraInformationStateString(player, value);
   }
 }
 
@@ -129,6 +161,16 @@ void ExtraInfoState::InformationStateTensor(
   std::copy(extra_information_tensor_[player].begin(),
             extra_information_tensor_[player].end(),
             values.begin() + base_size);
+}
+
+std::string ExtraInfoState::ObservationString(Player player) const {
+  return state_->ObservationString(player) +
+         extra_observation_string_[player];
+}
+
+std::string ExtraInfoState::InformationStateString(Player player) const {
+  return state_->InformationStateString(player) +
+         extra_information_state_string_[player];
 }
 
 

@@ -22,17 +22,19 @@ def train_iteration(game, net, bots, optimizer, explore=0):
     samples = []
     losses = []
     score = 0
-
+    all_rounds = 0
     for bot in bots:
-        for player_id in range(1):
+        for player_id in range(2):
             bot.player_id = 1 - player_id
             bot.restart()
             state = game.new_initial_state()
-            rounds = 0
+            inner_rounds = 0
             log_probs = []
             values = []
             rewards = []
             entropies = []
+            actions = []
+            print("agent_id", player_id, "bot", bot.name)
             while not state.is_terminal():
                 bot_action = bot.step(state)
                 obs = torch.tensor(
@@ -41,9 +43,10 @@ def train_iteration(game, net, bots, optimizer, explore=0):
                 )
 
                 logits, value = net(obs)
-
-                dist = torch.distributions.Categorical(logits=logits)
+                temperature = 3.0 if inner_rounds < explore else 1.0
+                dist = torch.distributions.Categorical(logits=logits/temperature)
                 action = dist.sample()
+                actions.append(action.item())
 
                 log_probs.append(dist.log_prob(action))
                 values.append(value)
@@ -54,8 +57,15 @@ def train_iteration(game, net, bots, optimizer, explore=0):
                     state.apply_actions([action.item(), bot_action])
                 else:
                     state.apply_actions([bot_action, action.item()])
+                print(
+                   "my action:", action.item(),
+                   "bot action:", bot_action,
+                   "P(cooperate):", dist.probs[0].item(),
+                   "reward:", state.rewards()[player_id],
+                )
                 rewards.append(state.rewards()[player_id])
-                rounds += 1
+                all_rounds += 1
+                inner_rounds += 1
 
 
             returns = []
@@ -84,7 +94,8 @@ def train_iteration(game, net, bots, optimizer, explore=0):
     loss.backward()
     optimizer.step()
 
-    print("average score", score / (2 * len(bots) * rounds))
+    print("average score", score / all_rounds)
+    print(actions)
 
 def train_old(game, net, bots, optimizer):
 
@@ -112,6 +123,7 @@ def train_old(game, net, bots, optimizer):
 
             # play round
             state.apply_actions([action.item(), bot_action])
+            actions.append(action.item())
 
             reward = state.rewards()[player_id]
             advantage = (reward - value).detach()
@@ -136,6 +148,7 @@ if __name__ == '__main__':
     parser.add_argument('--reps', help='repetitions', type=int, default=50)
     parser.add_argument('--iter', help='iterations', type=int, default=80)
     parser.add_argument('--recall', help='recall', type=int, default=4)
+    parser.add_argument('--seed', help='seed', type=int, default=12345)
     parser.add_argument('--game', default='coordination')
     parser.add_argument('--bots', default=None)
     # supported: coordination, pd, ...
@@ -154,14 +167,23 @@ if __name__ == '__main__':
         bot_spec = literal_eval(args.bots)
         bots = get_bots(bot_spec)
     else:
-       bots = [TFTBot(1), CycleBot([0])]
+       #bots = [TFTBot(1), CycleBot([0]), CycleBot([1])]
+       #bots = [CycleBot([1])]
+       bots = [TFTBot(), CycleBot([0])]
 
     input_size = game.observation_tensor_size()
+    torch.manual_seed(args.seed)
+
     net = MatrixNet(input_size)
     optimizer = torch.optim.Adam(
        net.parameters(),
        lr=0.01,
     )
     for iteration in range(args.iter):
-        #train_iteration(game, net, bots, optimizer, explore=8)
-        train_old(game, net, bots, optimizer)
+        if iteration < 8:
+            train_iteration(game, net, bots, optimizer, explore=8)
+        else:
+            train_iteration(game, net, bots, optimizer)
+        #train_old(game, net, bots, optimizer)
+
+# 
