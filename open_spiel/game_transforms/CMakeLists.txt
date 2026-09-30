@@ -44,11 +44,11 @@ add_executable(misere_test
                $<TARGET_OBJECTS:tests>)
 add_test(misere_test misere_test)
 
-add_executable(extra_info_test
-               extra_info_test.cc
+add_executable(extra_info_game_test
+               extra_info_game_test.cc
                ${OPEN_SPIEL_OBJECTS}
                $<TARGET_OBJECTS:tests>)
-add_test(extra_info_test extra_info_test)
+add_test(extra_info_game_test extra_info_game_test)
 
 add_executable(add_noise_test
                add_noise_test.cc

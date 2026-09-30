@@ -186,4 +186,4 @@ if __name__ == '__main__':
             train_iteration(game, net, bots, optimizer)
         #train_old(game, net, bots, optimizer)
 
-# 
+#

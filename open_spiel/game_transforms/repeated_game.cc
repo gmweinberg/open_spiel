@@ -55,8 +55,8 @@ const GameType kGameType{
      {"num_repetitions",
       GameParameter(GameParameter::Type::kInt, /*is_mandatory=*/true)},
      {"recall", GameParameter(kDefaultRecall)}},   //,
-		 //{"cumulative", GameParameter(GameParameter::Type::kBool)},
-		 //{"decay", GameParameter(GameParameter::Type::kDouble)},
+     //{"cumulative", GameParameter(GameParameter::Type::kBool)},
+     //{"decay", GameParameter(GameParameter::Type::kDouble)},
     /*default_loadable=*/false,
     /*provides_factored_observation_string=*/false,
     /*is_concrete=*/false};

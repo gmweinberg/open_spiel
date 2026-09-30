@@ -21,7 +21,7 @@
 #include "open_spiel/spiel.h"
 #include "open_spiel/spiel_utils.h"
 
-// Allows adding extra information to the observation tensor, 
+// Allows adding extra information to the observation tensor,
 // observation string, information state tensor, or information stat string.
 // Adding tensor information will flatten a tensor
 // if it was not already flat.
@@ -32,7 +32,7 @@ namespace open_spiel {
 class ExtraInfoState : public WrappedState {
  public:
   ExtraInfoState(std::shared_ptr<const Game> game, std::unique_ptr<State> state,
-			int extra_observation_tensor_size,
+      int extra_observation_tensor_size,
       int extra_information_tensor_size);
 
 
@@ -44,43 +44,43 @@ class ExtraInfoState : public WrappedState {
     return std::unique_ptr<State>(new ExtraInfoState(*this));
   }
 
-	void ObservationTensor(Player player,
+  void ObservationTensor(Player player,
         absl::Span<float> values) const override;
 
-	void InformationStateTensor(Player player,
+  void InformationStateTensor(Player player,
         absl::Span<float> values) const override;
 
   std::string ObservationString(Player player) const override;
 
   std::string InformationStateString(Player player) const override;
 
-	void SetExtraObservationTensor(
-			Player player, const std::vector<float>& values);
+  void SetExtraObservationTensor(
+      Player player, const std::vector<float>& values);
 
-	void SetExtraObservationTensor(
-			const std::vector<float>& values);
+  void SetExtraObservationTensor(
+      const std::vector<float>& values);
 
-	void SetExtraInformationStateTensor(
-			Player player, const std::vector<float>& values);
+  void SetExtraInformationStateTensor(
+      Player player, const std::vector<float>& values);
 
-	void SetExtraInformationStateTensor(
-			const std::vector<float>& values);
+  void SetExtraInformationStateTensor(
+      const std::vector<float>& values);
 
-	void SetExtraInformationStateString(Player player,
+  void SetExtraInformationStateString(Player player,
                                     const std::string& value);
 
   void SetExtraObservationString(const std::string& value);
 
-	void SetExtraObservationString(Player player,
+  void SetExtraObservationString(Player player,
                                     const std::string& value);
 
   void SetExtraInformationStateString(const std::string& value);
 
   private:
-	 std::vector<std::vector<float>> extra_information_tensor_;
-	 std::vector<std::vector<float>> extra_observation_tensor_;
-	 std::vector<std::string> extra_observation_string_;
-	 std::vector<std::string> extra_information_state_string_;
+   std::vector<std::vector<float>> extra_information_tensor_;
+   std::vector<std::vector<float>> extra_observation_tensor_;
+   std::vector<std::string> extra_observation_string_;
+   std::vector<std::string> extra_information_state_string_;
 };
 
 class ExtraInfoGame : public WrappedGame {
@@ -92,16 +92,16 @@ class ExtraInfoGame : public WrappedGame {
   std::unique_ptr<State> NewInitialState() const override {
     return std::unique_ptr<State>(
         new ExtraInfoState(shared_from_this(), game_->NewInitialState(),
-					extra_observation_tensor_size_,extra_information_tensor_size_));
+          extra_observation_tensor_size_,extra_information_tensor_size_));
   }
 
-	std::vector<int> ObservationTensorShape() const override;
+  std::vector<int> ObservationTensorShape() const override;
 
   std::vector<int> InformationStateTensorShape() const override;
 
  private:
-	int extra_observation_tensor_size_;
-	int extra_information_tensor_size_;
+  int extra_observation_tensor_size_;
+  int extra_information_tensor_size_;
 
 };
 

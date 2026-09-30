@@ -30,7 +30,7 @@ class GamesExtraInfoTest(parameterized.TestCase):
         state = game.new_initial_state()
         old_ot_len = len(state.observation_tensor(0))
         old_it_len = len(state.information_state_tensor(0))
-        extra_info_game = pyspiel.create_extra_info_game(game, 
+        extra_info_game = pyspiel.create_extra_info_game(game,
           {"extra_observation_tensor_size":1,
           "extra_information_tensor_size":1} )
         state = extra_info_game.new_initial_state()
@@ -47,10 +47,10 @@ class GamesExtraInfoTest(parameterized.TestCase):
         state.set_extra_information_state_tensor(values=[0.4])
         state.set_extra_observation_string("green")
         state.set_extra_information_state_string("Monoecious")
-        assert state.observation_string(0) == old_os0 + "green" 
-        assert state.observation_string(1) == old_os1 + "green" 
-        assert state.information_state_string(0) == old_is0 + "Monoecious" 
-        assert state.information_state_string(1) == old_is1 + "Monoecious" 
+        assert state.observation_string(0) == old_os0 + "green"
+        assert state.observation_string(1) == old_os1 + "green"
+        assert state.information_state_string(0) == old_is0 + "Monoecious"
+        assert state.information_state_string(1) == old_is1 + "Monoecious"
         self.assertAlmostEqual(state.observation_tensor(0)[-1], 0.2)
         self.assertAlmostEqual(state.observation_tensor(1)[-1], 0.2)
         self.assertAlmostEqual(state.information_state_tensor(0)[-1], 0.4)
@@ -64,20 +64,20 @@ class GamesExtraInfoTest(parameterized.TestCase):
         state.set_extra_observation_tensor(player=1, values=[0.26])
         state.set_extra_information_state_tensor(0,[0.44])
         state.set_extra_information_state_tensor(1,[0.46])
-        assert state.observation_string(0) == old_os0 + "yellow" 
-        assert state.observation_string(1) == old_os1 + "blue" 
-        assert state.information_state_string(0) == old_is0 + "Gynomonoecious" 
-        assert state.information_state_string(1) == old_is1 + "Andromonoecious" 
+        assert state.observation_string(0) == old_os0 + "yellow"
+        assert state.observation_string(1) == old_os1 + "blue"
+        assert state.information_state_string(0) == old_is0 + "Gynomonoecious"
+        assert state.information_state_string(1) == old_is1 + "Andromonoecious"
         self.assertAlmostEqual(state.observation_tensor(0)[-1], 0.22)
         self.assertAlmostEqual(state.observation_tensor(1)[-1], 0.26)
         self.assertAlmostEqual(state.information_state_tensor(0)[-1], 0.44)
         self.assertAlmostEqual(state.information_state_tensor(1)[-1], 0.46)
+        # wrong size should raise error
+        with self.assertRaises(pyspiel.SpielError):
+           state.set_extra_observation_tensor(values=[0.2, 0.3])
+        with self.assertRaises(pyspiel.SpielError):
+           state.set_extra_information_state_tensor(player=0, values=[])
 
 
 if __name__ == "__main__":
   absltest.main()
-                  
-
-
-
-

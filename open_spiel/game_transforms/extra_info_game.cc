@@ -41,8 +41,8 @@ const GameType kGameType{/*short_name=*/"extra_info",
                          /*provides_observation_tensor=*/true,
                          {{"game", GameParameter(GameParameter::Type::kGame,
                                                  /*is_mandatory=*/true)},
-												 {"extra_observation_tensor_size",GameParameter(0)},
-												 {"extra_information_tensor_size",GameParameter(0)}},
+                         {"extra_observation_tensor_size",GameParameter(0)},
+                         {"extra_information_tensor_size",GameParameter(0)}},
                          /*default_loadable=*/false,
                          /*provides_factored_observation_string=*/true,
                          /*is_concrete=*/false};
@@ -75,8 +75,8 @@ ExtraInfoState::ExtraInfoState(
       extra_observation_tensor_(
           game->NumPlayers(),
           std::vector<float>(extra_observation_tensor_size, 0.0f)),
-			extra_observation_string_(game->NumPlayers()),
-			extra_information_state_string_(game->NumPlayers()){}
+      extra_observation_string_(game->NumPlayers()),
+      extra_information_state_string_(game->NumPlayers()) {}
 
 
 void ExtraInfoState::SetExtraObservationTensor(
@@ -192,8 +192,8 @@ std::vector<int> ExtraInfoGame::InformationStateTensorShape() const {
 ExtraInfoGame::ExtraInfoGame(std::shared_ptr<const Game> game, GameType game_type,
                        GameParameters game_parameters)
     : WrappedGame(game, game_type, game_parameters) {
-		   extra_observation_tensor_size_ = ParameterValue<int>("extra_observation_tensor_size");
-		   extra_information_tensor_size_ = ParameterValue<int>("extra_information_tensor_size");
+       extra_observation_tensor_size_ = ParameterValue<int>("extra_observation_tensor_size", 0);
+       extra_information_tensor_size_ = ParameterValue<int>("extra_information_tensor_size", 0);
 }
 
 

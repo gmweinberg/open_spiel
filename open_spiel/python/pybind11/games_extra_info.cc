@@ -26,45 +26,45 @@ using open_spiel::State;
 void open_spiel::init_pyspiel_games_extra_info(py::module& m) {
 
   py::classh<ExtraInfoState, State>(m, "ExtraInfoState")
-		.def("set_extra_observation_tensor",
-				 py::overload_cast<Player, const std::vector<float>&>(
-						 &ExtraInfoState::SetExtraObservationTensor),
-				 py::arg("player"), py::arg("values"))
-		.def("set_extra_observation_tensor",
-				 py::overload_cast<const std::vector<float>&>(
-						 &ExtraInfoState::SetExtraObservationTensor),
-				 py::arg("values"))
+    .def("set_extra_observation_tensor",
+         py::overload_cast<Player, const std::vector<float>&>(
+             &ExtraInfoState::SetExtraObservationTensor),
+         py::arg("player"), py::arg("values"))
+    .def("set_extra_observation_tensor",
+         py::overload_cast<const std::vector<float>&>(
+             &ExtraInfoState::SetExtraObservationTensor),
+         py::arg("values"))
 
-		.def("set_extra_information_state_tensor",
-				 py::overload_cast<Player, const std::vector<float>&>(
-						 &ExtraInfoState::SetExtraInformationStateTensor),
-				 py::arg("player"), py::arg("values"))
-		.def("set_extra_information_state_tensor",
-				 py::overload_cast<const std::vector<float>&>(
-						 &ExtraInfoState::SetExtraInformationStateTensor),
-				 py::arg("values"))
+    .def("set_extra_information_state_tensor",
+         py::overload_cast<Player, const std::vector<float>&>(
+             &ExtraInfoState::SetExtraInformationStateTensor),
+         py::arg("player"), py::arg("values"))
+    .def("set_extra_information_state_tensor",
+         py::overload_cast<const std::vector<float>&>(
+             &ExtraInfoState::SetExtraInformationStateTensor),
+         py::arg("values"))
 
-		.def("set_extra_observation_string",
-				 py::overload_cast<Player, const std::string&>(
-						 &ExtraInfoState::SetExtraObservationString),
-				 py::arg("player"), py::arg("value"))
+    .def("set_extra_observation_string",
+         py::overload_cast<Player, const std::string&>(
+             &ExtraInfoState::SetExtraObservationString),
+         py::arg("player"), py::arg("value"))
 
-		.def("set_extra_observation_string",
-				 py::overload_cast<const std::string&>(
-						 &ExtraInfoState::SetExtraObservationString),
-				 py::arg("value"))
+    .def("set_extra_observation_string",
+         py::overload_cast<const std::string&>(
+             &ExtraInfoState::SetExtraObservationString),
+         py::arg("value"))
 
-		.def("set_extra_information_state_string",
-				 py::overload_cast<Player, const std::string&>(
-						 &ExtraInfoState::SetExtraInformationStateString),
-				 py::arg("player"), py::arg("value"))
-		.def("set_extra_information_state_string",
-				 py::overload_cast<const std::string&>(
-						 &ExtraInfoState::SetExtraInformationStateString),
-				 py::arg("value"))
+    .def("set_extra_information_state_string",
+         py::overload_cast<Player, const std::string&>(
+             &ExtraInfoState::SetExtraInformationStateString),
+         py::arg("player"), py::arg("value"))
+    .def("set_extra_information_state_string",
+         py::overload_cast<const std::string&>(
+             &ExtraInfoState::SetExtraInformationStateString),
+         py::arg("value"))
 
 
-		 // Pickle support
+     // Pickle support
       .def(py::pickle(
           [](const ExtraInfoState& state) {  // __getstate__
             return SerializeGameAndState(*state.GetGame(), state);
