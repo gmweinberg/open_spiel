@@ -7,8 +7,8 @@ add_library (game_transforms OBJECT
   coop_to_1p.h
   efg_writer.cc
   efg_writer.h
-	extra_info_game.cc
-	extra_info_game.h
+  extra_info_game.cc
+  extra_info_game.h
   misere.cc
   misere.h
   normal_form_extensive_game.cc
