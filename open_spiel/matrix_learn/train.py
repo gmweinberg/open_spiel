@@ -24,6 +24,8 @@ def train_iteration(game, net, bots, optimizer, explore=0):
     score = 0
     all_rounds = 0
     for bot in bots:
+        if bot.name.find("Cycle") == 0:
+           state.set_extra_observation_tensor(values=[1.0])
         for player_id in range(2):
             bot.player_id = 1 - player_id
             bot.restart()
@@ -76,16 +78,22 @@ def train_iteration(game, net, bots, optimizer, explore=0):
                  G = reward + gamma * G
                  returns.append(G)
             returns.reverse()
-            for log_prob, value, return_to_go, entropy in zip(
-                log_probs, values, returns, entropies
-            ):
-                advantage = (return_to_go - value).detach()
+            advantages = torch.stack([
+                (return_to_go - value).detach()
+                for value, return_to_go in zip(values, returns)
+            ])
 
+            advantages = (advantages - advantages.mean()) / (
+                advantages.std() + 1e-8
+            )
+
+            for log_prob, value, return_to_go, entropy, advantage in zip(
+                log_probs, values, returns, entropies, advantages
+            ):
                 policy_loss = -log_prob * advantage
                 value_loss = (value - return_to_go) ** 2
 
-                loss = (policy_loss + 0.01 * value_loss - 0.05 * entropy)
-
+                loss = policy_loss + 0.01 * value_loss - 0.05 * entropy
                 losses.append(loss)
 
             score += state.returns()[player_id]
@@ -140,7 +148,6 @@ def train_old(game, net, bots, optimizer):
     print("average score", score / (len(bots) * rounds))
 
 
-
 if __name__ == '__main__':
     from argparse import ArgumentParser
     from ast import literal_eval
@@ -156,6 +163,8 @@ if __name__ == '__main__':
     game_name = 'matrix_' + args.game
     game = pyspiel.create_repeated_game(game_name, {
       "num_repetitions": args.reps,"recall": args.recall,})
+    extra_game = pyspiel.create_extra_info_game(game,
+          {"extra_observation_tensor_size":1})
 
     #bot_spec = [([1,1,0,0], 2), ([0], 4), ([1,0], 1)] # unbalanced
     # bot_spec = [([1,1,0,0], 2), ([0], 8), ([1], 1), ([1,0], 1)] # less unbalanced
@@ -169,9 +178,10 @@ if __name__ == '__main__':
     else:
        #bots = [TFTBot(1), CycleBot([0]), CycleBot([1])]
        #bots = [CycleBot([1])]
-       bots = [TFTBot(), CycleBot([0])]
+       #bots = [TFTBot(), CycleBot([0])]
+       bots = [TFTBot()]
 
-    input_size = game.observation_tensor_size()
+    input_size = extra_game.observation_tensor_size()
     torch.manual_seed(args.seed)
 
     net = MatrixNet(input_size)
@@ -181,9 +191,9 @@ if __name__ == '__main__':
     )
     for iteration in range(args.iter):
         if iteration < 8:
-            train_iteration(game, net, bots, optimizer, explore=8)
+            train_iteration(extra_game, net, bots, optimizer, explore=8)
         else:
-            train_iteration(game, net, bots, optimizer)
+            train_iteration(extra_game, net, bots, optimizer)
         #train_old(game, net, bots, optimizer)
 
 #
