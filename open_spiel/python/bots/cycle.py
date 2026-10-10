@@ -12,7 +12,6 @@ class CycleBot(pyspiel.Bot):
             self.cycle = [0]
         else:
             self.cycle = list(cycle)
-        self.offset = 0
         if name is None:
             self.name = "CycleBot" + ''.join(str(elm) for elm in self.cycle)
         else:
@@ -22,10 +21,10 @@ class CycleBot(pyspiel.Bot):
     def step_with_policy(self, state):
         """Returns the stochastic policy and selected action in the given state."""
         legal_actions = state.legal_actions(state.current_player())
-        action = self.cycle[self.offset]
+        offset = state.move_number() % len(self.cycle)
+        action = self.cycle[offset]
         if action not in legal_actions:
             raise ValueError("Unpossible")
-        self.offset = (self.offset + 1) % len(self.cycle)
         policy = [(action, 1)]
         return policy, action
 
@@ -33,10 +32,10 @@ class CycleBot(pyspiel.Bot):
         return self.step_with_policy(state)[1]
 
     def restart_at(self, state):
-        self.offset = state.move_number() % len(self.cycle)
+        pass
 
     def restart(self):
-        self.offset = 0
+        pass
 
 
 
