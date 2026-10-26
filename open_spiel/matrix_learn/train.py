@@ -16,6 +16,7 @@ def get_bots(spec):
             bots.append(bot)
     return bots
 
+
 def pretrain(game, net, bots, optimizer):
     losses = []
     for bot in bots:
@@ -199,12 +200,13 @@ if __name__ == '__main__':
     parser.add_argument('--iter', help='iterations', type=int, default=80)
     parser.add_argument('--recall', help='recall', type=int, default=4)
     parser.add_argument('--seed', help='seed', type=int, default=12345)
-    parser.add_argument('--game', default='coordination')
+    parser.add_argument('--game', default='pd2')
     parser.add_argument('--bots', default=None)
     parser.add_argument('--tft', action="store_true", help="include TFTBot")
     # supported: coordination, pd, ...
     args = parser.parse_args()
     game_name = 'matrix_' + args.game
+    print(game_name)
     game = pyspiel.create_repeated_game(game_name, {
       "num_repetitions": args.reps,"recall": args.recall,})
     extra_game = pyspiel.create_extra_info_game(game,

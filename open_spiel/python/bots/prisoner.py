@@ -7,7 +7,7 @@ import pyspiel
 
 class TFTBot(pyspiel.Bot):
     """tit for tat"""
-    def __init__(self, player_id=None, name=None):
+    def __init__(self, player_id=0, name=None, reverse=False):
         super().__init__()
         if player_id is None:
             raise ValueError()
@@ -16,6 +16,7 @@ class TFTBot(pyspiel.Bot):
             self.name = "TitForTat"
         else:
             self.name = name
+        self.reverse = reverse
 
 
     def step_with_policy(self, state):
@@ -28,7 +29,10 @@ class TFTBot(pyspiel.Bot):
             else:
                 action = history[-1]
         else:
-            action = 0
+            if self.reverse:
+                action = 1
+            else:
+                action = 0
         if action not in legal_actions:
             raise ValueError("Unpossible")
         policy = [(action, 1)]
@@ -43,7 +47,7 @@ class TFTBot(pyspiel.Bot):
 
 class GrimBot(pyspiel.Bot):
     """Grim Trigger (unforgiving)"""
-    def __init__(self, player_id=None, name=None):
+    def __init__(self, player_id=0, name=None, reverse=False):
         super().__init__()
         if player_id is None:
             raise ValueError()
@@ -52,21 +56,61 @@ class GrimBot(pyspiel.Bot):
             self.name = "GrimTrigger"
         else:
             self.name = name
+        self.reverse = reverse
 
 
     def step_with_policy(self, state):
         """Returns the stochastic policy and selected action in the given state."""
         legal_actions = state.legal_actions(state.current_player())
         history = state.history()
+        if reverse:
+            defect = 0
+        else:
+            defect = 1
         if history:
-            if 1 in history:
-                action = 1
+            if defect in history:
+                action = defect
             else:
-                action = 0
+                action = 1 - defect
         else:
             action = 0
         if action not in legal_actions:
             raise ValueError("Unpossible")
+        policy = [(action, 1)]
+        return policy, action
+
+    def step(self, state):
+        return self.step_with_policy(state)[1]
+
+    def restart_at(self, state):
+        pass
+
+class SwitchBot(pyspiel.Bot):
+    """Changes actions based on whether or not previous actions were the same."""
+    def __init__(self, player_id=0, name=None, initial=0, same=False):
+        super().__init__()
+        if name is None:
+            self.name = "CoordinateBot"
+        else:
+            self.name = name
+        self.inital = initial
+        self.same = same # switch f actions were the same
+
+    def step_with_policy(self, state):
+        history = state.history()
+        if history:
+            if self.same:
+                if history[-2] == history[-1]:
+                    action = 1 - history[-1]
+                else:
+                    action = history[-1]
+            else:
+                if history[-2] == history[-1]:
+                    action = history[-1]
+                else:
+                    action = 1 - history[-1]
+        else:
+            action = self.initial
         policy = [(action, 1)]
         return policy, action
 

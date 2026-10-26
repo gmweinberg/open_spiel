@@ -139,7 +139,7 @@ if __name__ == '__main__':
     #print(action_counts)
     #print(rewards)
     game = pyspiel.create_repeated_game(game_name, {
-      "num_repetitions": 2 * args.reps + 1,"recall": args.recall,})
+      "num_repetitions": args.reps,"recall": args.recall,})
     #print(len(action_counts))
     for bot in bots:
         play_match(game, bot)
