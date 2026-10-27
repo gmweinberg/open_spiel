@@ -321,6 +321,18 @@ pybind_library(
 )
 
 pybind_library(
+    name = "games_extra_info",
+    srcs = ["games_extra_info.cc"],
+    hdrs = ["games_extra_info.h"],
+    deps = [
+        ":pybind11",
+        "//open_spiel",
+        "//open_spiel/game_transforms:extra_info_game",
+        "@pybind11_abseil//pybind11_abseil:absl_casters",
+    ],
+)
+
+pybind_library(
     name = "games_gin_rummy",
     srcs = ["games_gin_rummy.cc"],
     hdrs = ["games_gin_rummy.h"],
@@ -628,6 +640,7 @@ pybind_extension(
         ":games_crazyhouse",
         ":games_crossword",
         ":games_dots_and_boxes",
+        ":games_extra_info",
         ":games_euchre",
         ":games_gin_rummy",
         ":games_go",

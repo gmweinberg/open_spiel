@@ -260,6 +260,35 @@ target_link_libraries(open_spiel_game_transforms_efg_writer_test PRIVATE
 )
 add_test(NAME efg_writer_test COMMAND open_spiel_game_transforms_efg_writer_test)
 
+add_library(open_spiel_game_transforms_extra_info_game_objs OBJECT
+  extra_info_game.cc
+  extra_info_game.h
+)
+target_link_libraries(open_spiel_game_transforms_extra_info_game_objs PUBLIC
+  open_spiel::game_transforms::game_wrapper
+  open_spiel::open_spiel
+  absl::strings
+)
+add_library(open_spiel_game_transforms_extra_info_game INTERFACE)
+target_link_libraries(open_spiel_game_transforms_extra_info_game INTERFACE
+  open_spiel_game_transforms_extra_info_game_objs
+  $<TARGET_OBJECTS:open_spiel_game_transforms_extra_info_game_objs>
+)
+add_library(open_spiel::game_transforms::extra_info_game ALIAS open_spiel_game_transforms_extra_info_game)
+set_property(GLOBAL APPEND PROPERTY OPEN_SPIEL_OBJECT_LIBRARIES open_spiel_game_transforms_extra_info_game)
+
+add_executable(open_spiel_game_transforms_extra_info_game_test
+  extra_info_game_test.cc
+)
+target_link_libraries(open_spiel_game_transforms_extra_info_game_test PRIVATE
+  open_spiel::game_transforms::extra_info_game
+  open_spiel::open_spiel
+  open_spiel::basic_tests
+  open_spiel::games::all_games
+  open_spiel::utils::file
+)
+add_test(NAME extra_info_game_test COMMAND open_spiel_game_transforms_extra_info_game_test)
+
 add_library(open_spiel_game_transforms_repeated_game_objs OBJECT
   repeated_game.cc
   repeated_game.h

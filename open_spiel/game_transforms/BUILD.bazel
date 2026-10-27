@@ -254,6 +254,31 @@ cc_test(
 )
 
 cc_library(
+    name = "extra_info_game",
+    srcs = ["extra_info_game.cc"],
+    hdrs = ["extra_info_game.h"],
+    copts = ["-fexceptions"],
+    features = ["-use_header_modules"],
+    deps = [":game_wrapper",
+      "//open_spiel",
+      "@abseil-cpp//absl/strings"
+    ],
+    alwayslink = 1,
+)
+
+cc_test(
+    name = "extra_info_game_test",
+    srcs = ["extra_info_game_test.cc"],
+    deps = [
+        ":extra_info_game",
+        "//open_spiel",
+        "//open_spiel:basic_tests",
+        "//open_spiel/games:all_games",
+        "//open_spiel/utils:file",
+    ],
+)
+
+cc_library(
     name = "repeated_game",
     srcs = ["repeated_game.cc"],
     hdrs = ["repeated_game.h"],
