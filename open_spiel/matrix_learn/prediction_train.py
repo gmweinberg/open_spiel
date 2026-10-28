@@ -31,7 +31,7 @@ def prediction_train(game, net, bots, optimizer, evaluate=False, clue=False):
                 bot_action = bot.step(state)
 
                 obs = torch.tensor(
-                    list(state.observation_tensor(player_id)) + [float(player_id)],
+                    state.observation_tensor(player_id),
                     dtype=torch.float32,
                 )
 
@@ -119,7 +119,7 @@ def expected_score(state, player_id, net, depth):
 
     scores = []
     obs = torch.tensor(
-        list(state.observation_tensor(player_id)) + [float(player_id)],
+        state.observation_tensor(player_id),
         dtype=torch.float32,
     )
 
@@ -199,7 +199,7 @@ if __name__ == '__main__':
     game_name = 'matrix_' + args.game
     print(game_name)
     game = pyspiel.create_repeated_game(game_name, {
-      "num_repetitions": args.reps,"recall": args.recall,})
+        "num_repetitions": args.reps,"recall": args.recall, "relative":True})
 
     if args.bots:
         bot_spec = literal_eval(args.bots)
@@ -215,7 +215,7 @@ if __name__ == '__main__':
            # bots = [TFTBot(), CycleBot([1])]
            #bots = [TFTBot()]
 
-    input_size = game.observation_tensor_size() + 1 # add player id
+    input_size = game.observation_tensor_size()
     torch.manual_seed(args.seed)
 
     net = MatrixNet(input_size)

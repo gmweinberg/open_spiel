@@ -71,3 +71,6 @@ open_spiel/.vs
 *.swp
 
 open_spiel.egg-info/
+
+# crap
+crap
