@@ -6,7 +6,7 @@ import torch
 import pyspiel
 from open_spiel.python.bots.cycle import CycleBot
 from open_spiel.python.bots.prisoner import TFTBot, GrimBot
-from matrix_net import MatrixNet
+from prediction_net import PredictionNet
 
 """Try to learn the probability that the the player will play a given move in a given situation."""
 
@@ -35,8 +35,8 @@ def prediction_train(game, net, bots, optimizer, evaluate=False, clue=False):
                     dtype=torch.float32,
                 )
 
-                _, opponent_logit = net(obs)
-                opponent_logit = opponent_logit.squeeze()
+                logits = net(obs)
+                probs = torch.softmax(logits, dim=-1)
 
                 # Play randomly to explore different histories
                 if clue:
@@ -53,18 +53,14 @@ def prediction_train(game, net, bots, optimizer, evaluate=False, clue=False):
                 else:
                     state.apply_actions([bot_action, net_action])
 
-                # 1 means opponent cooperated; 0 means defected
-                target = torch.tensor(
-                    float(bot_action == 0),
-                    dtype=torch.float32,
-                )
-
-                loss = torch.nn.functional.binary_cross_entropy_with_logits(
-                    opponent_logit, target
+                # 0 means cooperate; 1 means defect
+                target = torch.tensor(bot_action, dtype=torch.long)
+                loss = torch.nn.functional.cross_entropy(
+                    logits.unsqueeze(0), target.long().reshape(1)
                 )
                 if evaluate:
-                    p = torch.sigmoid(opponent_logit).item()
-                    y = target.item()
+                    p = probs[0].item()
+                    y = (target == 0).float().item()
 
                     result = (loss.item(), (p - y)**2, p, y)
 
@@ -122,12 +118,10 @@ def expected_score(state, player_id, net, depth):
         state.observation_tensor(player_id),
         dtype=torch.float32,
     )
-
     with torch.no_grad():
-        _, opponent_logit = net(obs)
-        p = torch.sigmoid(opponent_logit).item()
+        logits = net(obs)
+        probs = torch.softmax(logits, dim=-1).tolist()
 
-    probs = (p, 1.0 - p)
 
     for my_action in (0, 1):
         score = 0.0
@@ -218,7 +212,7 @@ if __name__ == '__main__':
     input_size = game.observation_tensor_size()
     torch.manual_seed(args.seed)
 
-    net = MatrixNet(input_size)
+    net = PredictionNet(players=2, actions=2, input_size=input_size)
     optimizer = torch.optim.Adam(
        net.parameters(),
        lr=0.001,
