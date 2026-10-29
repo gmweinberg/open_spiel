@@ -12,6 +12,58 @@ from prediction_net import PredictionNet
 
 expected_score_cache = {}
 
+def prediction_train_batch(game, net, bots, optimizer, evaluate=False, clue=False):
+    losses = []
+    for bot in bots:
+        for player_id in (0, 1):
+            losses.extend(prediction_train_batchlet(game, net, bot, player_id, optimizer, clue))
+    optimizer.zero_grad()
+    loss = torch.stack(losses).mean()
+    loss.backward()
+    optimizer.step()
+
+
+def prediction_train_batchlet(game, net, bot, player_id, optimizer, clue=False):
+    losses = []
+    depth = 4
+    bot.player_id = 1 - player_id
+    bot.restart()
+    state = game.new_initial_state()
+
+    while not state.is_terminal():
+        bot_action = bot.step(state)
+
+        obs = torch.tensor(
+            state.observation_tensor(player_id),
+            dtype=torch.float32,
+        )
+
+        logits = net(obs)
+        probs = torch.softmax(logits, dim=-1)
+
+        # Play randomly to explore different histories
+        if clue:
+            better = expected_score(state, player_id, net, depth)[0]
+            if random() < 0.8:
+                net_action = better
+            else:
+                net_action = 1 - better
+        else:
+            net_action = randrange(2)
+
+        if player_id == 0:
+            state.apply_actions([net_action, bot_action])
+        else:
+            state.apply_actions([bot_action, net_action])
+
+        # 0 means cooperate; 1 means defect
+        target = torch.tensor(bot_action, dtype=torch.long)
+        loss = torch.nn.functional.cross_entropy(
+            logits.unsqueeze(0), target.long().reshape(1)
+        )
+        losses.append(loss)
+    return losses
+
 def prediction_train(game, net, bots, optimizer, evaluate=False, clue=False):
     """Learn the probabilities of bots playing moves in a game against a random player.
        These will not be the same as the probabilities against nonrandom players because
@@ -152,15 +204,15 @@ def expected_score(state, player_id, net, depth):
         expected_score_cache[key] = 1, scores[1]
     return expected_score_cache[key]
 
-def play_match(game, bot, net):
+def play_match(game, bot, bot_id, net):
     """Have brute play game against a bot.
        print the average score."""
-    # for now brute is always player 0
-    player_id = 0
+    game_name = game.get_type().long_name.replace("Extra Info ", "").replace("Repeated ", "")
     depth = 8
     score = 0
     rounds = 0
-    bot.player_id = 1 - player_id
+    bot.player_id = bot_id
+    player_id = 1 - bot_id
     bot.restart()
     state = game.new_initial_state()
 
@@ -171,7 +223,7 @@ def play_match(game, bot, net):
         state.apply_actions([net_action, bot_action])
         score += state.rewards()[player_id]
         rounds += 1
-    print("avg score vs ", bot.name, score/rounds)
+    print(game_name, bot.name, bot_id, score/rounds)
 
 
 
@@ -218,14 +270,17 @@ if __name__ == '__main__':
        lr=0.001,
     )
     for _ in range(1000):
-        prediction_train(game, net, bots, optimizer)
-    prediction_train(game, net, bots, optimizer, evaluate=True)
+        prediction_train_batch(game, net, bots, optimizer)
+        #prediction_train(game, net, bots, optimizer)
+    #prediction_train(game, net, bots, optimizer, evaluate=True)
     for _ in range(1000):
-        prediction_train(game, net, bots, optimizer, clue=True)
-    prediction_train(game, net, bots, optimizer, evaluate=True, clue=True)
+        prediction_train_batch(game, net, bots, optimizer, clue=True)
+        #prediction_train(game, net, bots, optimizer, clue=True)
+    #prediction_train(game, net, bots, optimizer, evaluate=True, clue=True)
     expected_score_cache = {}
+    print("match results:")
     for bot in bots:
-        play_match(game, bot, net)
+        play_match(game, bot, bot_id=1, net=net)
 
     print("elasped", int(time() - started))
 
