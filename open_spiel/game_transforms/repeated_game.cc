@@ -282,7 +282,7 @@ RepeatedGame::RepeatedGame(std::shared_ptr<const Game> stage_game,
       stage_game_(stage_game),
       num_repetitions_(ParameterValue<int>("num_repetitions")),
       recall_(ParameterValue<int>("recall", kDefaultRecall)),
-      relative_(ParameterValue<bool>("relative", false)) {
+      relative_(ParameterValue<bool>("relative", kDefaultRelative)) {
   SPIEL_CHECK_GE(recall_, 1);
 }
 
