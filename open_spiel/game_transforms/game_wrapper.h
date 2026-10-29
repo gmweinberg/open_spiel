@@ -160,6 +160,8 @@ class WrappedGame : public Game {
     return game_->MaxChanceNodesInHistory();
   }
 
+  virtual const Game& GetWrappedGame() const { return *game_; }
+
  protected:
   std::shared_ptr<const Game> game_;
 };
