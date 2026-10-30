@@ -191,6 +191,7 @@ if(OPEN_SPIEL_BUILD_WITH_PYTHON)
     open_spiel::python::pybind11::pybind11
     open_spiel::open_spiel
     open_spiel::game_transforms::cached_tree
+    open_spiel::game_transforms::extra_info_game
     open_spiel::game_transforms::normal_form_extensive_game
     open_spiel::game_transforms::repeated_game
     open_spiel::game_transforms::turn_based_simultaneous_game
