@@ -15,6 +15,7 @@
 #include "open_spiel/python/pybind11/games_extra_info.h"
 
 #include "open_spiel/game_transforms/extra_info_game.h"
+#include "open_spiel/game_transforms/game_wrapper.h"
 #include "open_spiel/spiel.h"
 #include "pybind11/include/pybind11/cast.h"
 #include "pybind11/include/pybind11/pybind11.h"
@@ -75,7 +76,7 @@ void open_spiel::init_pyspiel_games_extra_info(py::module& m) {
             return dynamic_cast<ExtraInfoState*>(game_and_state.second.release());
           }));
 
-  py::classh<ExtraInfoGame, Game>(m, "ExtraInfoGame")
+  py::classh<ExtraInfoGame, WrappedGame>(m, "ExtraInfoGame")
       // Pickle support
       .def(py::pickle(
           [](std::shared_ptr<const ExtraInfoGame> game) {  // __getstate__

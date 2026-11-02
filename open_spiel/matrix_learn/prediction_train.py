@@ -1,34 +1,43 @@
 #!/usr/bin/python
 from time import time
-from functools import cache
 from random import shuffle, randrange, seed, random
 import torch
 import pyspiel
 from open_spiel.python.bots.cycle import CycleBot
 from open_spiel.python.bots.prisoner import TFTBot, GrimBot
 from prediction_net import PredictionNet
+from ml_util import (get_inner_game, get_extra_info_size, create_info_matrix_game,
+                     set_utilities_tensor)
 
 """Try to learn the probability that the the player will play a given move in a given situation."""
 
 expected_score_cache = {}
 
-def prediction_train_batch(game, net, bots, optimizer, evaluate=False, clue=False):
+def get_bots_games(game, bots):
+    bots_games = [(game, bot, 0) for bot in bots]
+    bots_games.extend([(game, bot, 1) for bot in bots])
+    return bots_games
+
+def prediction_train_batch(bots_games, net, optimizer, evaluate=False, clue=False):
     losses = []
-    for bot in bots:
-        for player_id in (0, 1):
-            losses.extend(prediction_train_batchlet(game, net, bot, player_id, optimizer, clue))
+    for elm in bots_games:
+        game = elm[0]
+        bot = elm[1]
+        player_id = elm[2]
+        losses.extend(prediction_train_batchlet(game, bot, player_id, net, optimizer, clue))
     optimizer.zero_grad()
     loss = torch.stack(losses).mean()
     loss.backward()
     optimizer.step()
 
 
-def prediction_train_batchlet(game, net, bot, player_id, optimizer, clue=False):
+def prediction_train_batchlet(game, bot, player_id, net, optimizer, clue=False):
     losses = []
     depth = 4
     bot.player_id = 1 - player_id
     bot.restart()
     state = game.new_initial_state()
+    set_utilities_tensor(state, player_id)
 
     while not state.is_terminal():
         bot_action = bot.step(state)
@@ -207,7 +216,9 @@ def expected_score(state, player_id, net, depth):
 def play_match(game, bot, bot_id, net):
     """Have brute play game against a bot.
        print the average score."""
-    game_name = game.get_type().long_name.replace("Extra Info ", "").replace("Repeated ", "")
+    #game_name = game.get_type().long_name.replace("Extra Info ", "").replace("Repeated ", "")
+    inner = get_inner_game(game)
+    game_name = inner.get_type().short_name
     depth = 8
     score = 0
     rounds = 0
@@ -233,7 +244,7 @@ if __name__ == '__main__':
     from ast import literal_eval
     parser = ArgumentParser()
     parser.add_argument('--reps', help='repetitions', type=int, default=50) # per game
-    parser.add_argument('--iter', help='iterations', type=int, default=80)
+    parser.add_argument('--iter', help='iterations', type=int, default=100)
     parser.add_argument('--recall', help='recall', type=int, default=6)
     parser.add_argument('--seed', help='seed', type=int, default=12345)
     parser.add_argument('--game', default='pd2')
@@ -246,6 +257,8 @@ if __name__ == '__main__':
     print(game_name)
     game = pyspiel.create_repeated_game(game_name, {
         "num_repetitions": args.reps,"recall": args.recall, "relative":True})
+    input_size = get_extra_info_size(game)
+    game = create_info_matrix_game(game)
 
     if args.bots:
         bot_spec = literal_eval(args.bots)
@@ -260,8 +273,8 @@ if __name__ == '__main__':
            #bots = [CycleBot([1])]
            # bots = [TFTBot(), CycleBot([1])]
            #bots = [TFTBot()]
+    bots_games = get_bots_games(game, bots)
 
-    input_size = game.observation_tensor_size()
     torch.manual_seed(args.seed)
 
     net = PredictionNet(players=2, actions=2, input_size=input_size)
@@ -269,12 +282,12 @@ if __name__ == '__main__':
        net.parameters(),
        lr=0.001,
     )
-    for _ in range(1000):
-        prediction_train_batch(game, net, bots, optimizer)
+    for _ in range(args.iter):
+        prediction_train_batch(bots_games, net, optimizer)
         #prediction_train(game, net, bots, optimizer)
     #prediction_train(game, net, bots, optimizer, evaluate=True)
-    for _ in range(1000):
-        prediction_train_batch(game, net, bots, optimizer, clue=True)
+    for _ in range(args.iter):
+        prediction_train_batch(bots_games, net, optimizer, clue=True)
         #prediction_train(game, net, bots, optimizer, clue=True)
     #prediction_train(game, net, bots, optimizer, evaluate=True, clue=True)
     expected_score_cache = {}
