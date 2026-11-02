@@ -90,25 +90,32 @@ class SwitchBot(pyspiel.Bot):
     def __init__(self, player_id=0, name=None, initial=0, same=False):
         super().__init__()
         if name is None:
-            self.name = "CoordinateBot"
+            if same:
+               self.name = "SwitchSame"
+            else:
+               self.name = "SwitchDifferent"
         else:
             self.name = name
-        self.inital = initial
-        self.same = same # switch f actions were the same
+        self.initial = initial
+        self.same = same # switch if actions were the same
 
     def step_with_policy(self, state):
         history = state.history()
         if history:
+            if self.player_id == 0:
+                my_last = history[-2]
+            else:
+                my_last = history[-1]
             if self.same:
                 if history[-2] == history[-1]:
-                    action = 1 - history[-1]
+                    action = 1 - my_last
                 else:
-                    action = history[-1]
+                    action = my_last
             else:
                 if history[-2] == history[-1]:
-                    action = history[-1]
+                    action = my_last
                 else:
-                    action = 1 - history[-1]
+                    action = 1 - my_last
         else:
             action = self.initial
         policy = [(action, 1)]

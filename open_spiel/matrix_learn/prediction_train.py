@@ -18,6 +18,15 @@ def get_bots_games(game, bots):
     bots_games.extend([(game, bot, 1) for bot in bots])
     return bots_games
 
+def prediction_train_batches(iters, bots_games, net, optimizer):
+    global expected_score_cache
+    for ii in range(iters):
+        prediction_train_batch(bots_games, net, optimizer, clue=False)
+    expected_score_cache = {}
+    for ii in range(iters):
+        prediction_train_batch(bots_games, net, optimizer, clue=True)
+    expected_score_cache = {}
+
 def prediction_train_batch(bots_games, net, optimizer, evaluate=False, clue=False):
     losses = []
     for elm in bots_games:
@@ -226,12 +235,16 @@ def play_match(game, bot, bot_id, net):
     player_id = 1 - bot_id
     bot.restart()
     state = game.new_initial_state()
+    set_utilities_tensor(state, player_id)
 
     while not state.is_terminal():
         bot_action = bot.step(state)
         net_action = expected_score(state, player_id, net, depth)[0]
         #print('brute', brute_action, 'bot', bot_action)
-        state.apply_actions([net_action, bot_action])
+        if player_id == 0:
+            state.apply_actions([net_action, bot_action])
+        else:
+            state.apply_actions([bot_action, net_action])
         score += state.rewards()[player_id]
         rounds += 1
     print(game_name, bot.name, bot_id, score/rounds)
@@ -282,15 +295,15 @@ if __name__ == '__main__':
        net.parameters(),
        lr=0.001,
     )
-    for _ in range(args.iter):
-        prediction_train_batch(bots_games, net, optimizer)
-        #prediction_train(game, net, bots, optimizer)
+    prediction_train_batches(args.iter, bots_games, net, optimizer)
+    #for _ in range(args.iter):
+        #prediction_train_batch(bots_games, net, optimizer)
     #prediction_train(game, net, bots, optimizer, evaluate=True)
-    for _ in range(args.iter):
-        prediction_train_batch(bots_games, net, optimizer, clue=True)
+    #for _ in range(args.iter):
+        #prediction_train_batch(bots_games, net, optimizer, clue=True)
         #prediction_train(game, net, bots, optimizer, clue=True)
     #prediction_train(game, net, bots, optimizer, evaluate=True, clue=True)
-    expected_score_cache = {}
+
     print("match results:")
     for bot in bots:
         play_match(game, bot, bot_id=1, net=net)
