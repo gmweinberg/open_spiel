@@ -23,9 +23,9 @@
 #include <utility>
 #include <vector>
 
-#include "open_spiel/abseil-cpp/absl/strings/str_cat.h"
-#include "open_spiel/json/include/nlohmann/json.hpp"
-#include "open_spiel/json/include/nlohmann/json_fwd.hpp"
+#include "absl/strings/str_cat.h"
+#include "nlohmann/json.hpp"
+#include "nlohmann/json_fwd.hpp"
 #include "open_spiel/game_parameters.h"
 #include "open_spiel/policy.h"
 #include "open_spiel/utils/nlohmann_json.h"  // IWYU pragma: keep
@@ -344,7 +344,7 @@ void ConcreteGamesTest() {
   // Note: not intended to be an exhaustive list.
   std::vector<std::string> non_concrete_game_names = {
       "add_noise",     "cached_tree",
-      "coop_to_1p",    "efg_game",
+      "coop_to_1p",    "efg_game", "extra_info",
       "misere",        "normal_form_extensive_game",
       "repeated_game", "restricted_nash_response",
       "start_at",      "turn_based_simultaneous_game",

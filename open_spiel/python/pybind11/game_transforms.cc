@@ -21,14 +21,22 @@
 
 #include "open_spiel/game_parameters.h"
 #include "open_spiel/spiel.h"
+#include "open_spiel/game_transforms/add_noise.h"
 #include "open_spiel/game_transforms/cached_tree.h"
+#include "open_spiel/game_transforms/game_wrapper.h"
+#include "open_spiel/game_transforms/misere.h"
 #include "open_spiel/game_transforms/normal_form_extensive_game.h"
+#include "open_spiel/game_transforms/extra_info_game.h"
 #include "open_spiel/game_transforms/repeated_game.h"
 #include "open_spiel/game_transforms/turn_based_simultaneous_game.h"
 #include "open_spiel/python/pybind11/pybind11.h"  // NOLINT
 
 namespace open_spiel {
 namespace py = ::pybind11;
+using add_noise::AddNoiseGame;
+using add_noise::AddNoiseState;
+using cached_tree::CachedTreeGame;
+using cached_tree::CachedTreeState;
 
 void init_pyspiel_game_transforms(py::module& m) {
   m.def("load_game_as_turn_based",
@@ -63,6 +71,19 @@ void init_pyspiel_game_transforms(py::module& m) {
             &CreateRepeatedGame),
         "Creates a repeated game from a stage game.");
 
+  m.def(
+      "create_extra_info_game",
+      [](std::shared_ptr<const Game> game, const GameParameters& params) {
+        return CreateExtraInfoGame(*game, params);
+      },
+      "Creates an extra info game from a wrapped game.");
+
+  m.def(
+    "create_extra_info_game",
+    py::overload_cast<const std::string&, const GameParameters&>(
+        &CreateExtraInfoGame),
+    "Creates an extra info game from a wrapped game.");
+
   m.def("convert_to_cached_tree",
         [](std::shared_ptr<const Game> game) {
           return cached_tree::ConvertToCachedTree(*game);
@@ -78,5 +99,30 @@ void init_pyspiel_game_transforms(py::module& m) {
         py::overload_cast<const std::string&, const GameParameters&>(
             &cached_tree::LoadGameAsCachedTree),
         "Loads a game as cached tree wrapped game.");
+
+  py::classh<RepeatedGame, Game>(m, "RepeatedGame")
+    .def("stage_game", &RepeatedGame::StageGame,
+         py::return_value_policy::reference_internal);
+
+  py::classh<WrappedGame, Game>(m, "WrappedGame")
+    .def("get_wrapped_game", &WrappedGame::GetWrappedGame,
+         py::return_value_policy::reference_internal);
+
+  py::classh<WrappedState, State>(m, "WrappedState")
+    .def("get_wrapped_state", &WrappedState::GetWrappedState,
+         py::return_value_policy::reference_internal);
+
+  py::classh<AddNoiseGame, WrappedGame>(m, "AddNoiseGame")
+    .def("get_noise", &AddNoiseGame::GetNoise);
+
+  py::classh<AddNoiseState, WrappedState>(m, "AddNoiseState");
+
+  py::classh<CachedTreeGame, WrappedGame>(m, "CachedTreeGame");
+
+  py::classh<CachedTreeState, WrappedState>(m, "CachedTreeState");
+
+  py::classh<MisereGame, WrappedGame>(m, "MisereGame");
+
+  py::classh<MisereState, WrappedState>(m, "MisereState");
 }
 }  // namespace open_spiel

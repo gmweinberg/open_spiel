@@ -20,8 +20,8 @@
 #include <utility>
 #include <vector>
 
-#include "open_spiel/abseil-cpp/absl/types/span.h"
-#include "open_spiel/abseil-cpp/absl/types/optional.h"
+#include "absl/types/span.h"
+#include "absl/types/optional.h"
 #include "open_spiel/game_parameters.h"
 #include "open_spiel/spiel.h"
 #include "open_spiel/spiel_utils.h"
@@ -159,6 +159,8 @@ class WrappedGame : public Game {
   int MaxChanceNodesInHistory() const override {
     return game_->MaxChanceNodesInHistory();
   }
+
+  virtual const Game& GetWrappedGame() const { return *game_; }
 
  protected:
   std::shared_ptr<const Game> game_;

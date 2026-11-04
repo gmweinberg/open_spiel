@@ -218,6 +218,36 @@ REGISTER_SPIEL_GAME(kGameType, Factory);
 RegisterSingleTensorObserver single_tensor(kGameType.short_name);
 }  // namespace prisoners_dilemma
 
+// Prisoner's Dilemma2.
+namespace prisoners_dilemma2 {
+const GameType kGameType{
+    /*short_name=*/"matrix_pd2",
+    /*long_name=*/"Prisoner's Dilemma2",
+    GameType::Dynamics::kSimultaneous,
+    GameType::ChanceMode::kDeterministic,
+    GameType::Information::kOneShot,
+    GameType::Utility::kGeneralSum,
+    GameType::RewardModel::kTerminal,
+    /*max_num_players=*/2,
+    /*min_num_players=*/2,
+    /*provides_information_state_string=*/true,
+    /*provides_information_state_tensor=*/true,
+    /*provides_observation_string=*/true,
+    /*provides_observation_tensor=*/true,
+    /*parameter_specification=*/{}  // no parameters
+};
+
+std::shared_ptr<const Game> Factory(const GameParameters& params) {
+  return std::shared_ptr<const Game>(
+      new MatrixGame(kGameType, params, {"Cooperate", "Defect"},
+                     {"Cooperate", "Defect"}, {3, 0, 5, 1}, {3, 5, 0, 1}));
+}
+
+REGISTER_SPIEL_GAME(kGameType, Factory);
+
+RegisterSingleTensorObserver single_tensor(kGameType.short_name);
+}  // namespace prisoners_dilemma2
+
 // Stag Hunt.
 namespace stag_hunt {
 const GameType kGameType{

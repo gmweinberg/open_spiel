@@ -131,6 +131,34 @@ class GameTransformsTest(absltest.TestCase):
     assert state.is_terminal()
     assert sim_state.is_terminal()
 
+  def test_repeated_game_stage_game(self):
+    game = pyspiel.create_repeated_game(
+        "matrix_pd", {"num_repetitions": 4}
+    )
+
+    stage = game.stage_game()
+
+    self.assertIsInstance(stage, pyspiel.MatrixGame)
+    self.assertEqual(stage.get_type().short_name, "matrix_pd")
+
+    # Verify access to methods specific to MatrixGame.
+    self.assertEqual(len(stage.row_utilities()), 2)
+    self.assertEqual(len(stage.row_utilities()[0]), 2)
+
+  def test_wrapped_game(self):
+      game = pyspiel.load_game("misere(game=chess())")
+      print(type(game))
+      print(isinstance(game, pyspiel.WrappedGame))
+      print(pyspiel.WrappedGame.__mro__)
+      inner = game.get_wrapped_game()
+
+      assert isinstance(inner, pyspiel.ChessGame)
+      assert inner.is_chess960() is False
+      state = game.new_initial_state()
+      inner_state = state.get_wrapped_state()
+
+      assert isinstance(inner_state, pyspiel.ChessState)
+      assert inner_state.get_game().get_type().short_name == "chess"
 
 if __name__ == "__main__":
   absltest.main()
