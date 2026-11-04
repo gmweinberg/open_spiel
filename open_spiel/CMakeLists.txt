@@ -159,9 +159,170 @@ openspiel_optional_dependency(OPEN_SPIEL_BUILDING_WHEEL           OFF
 # Tests tagged "manual" in the BUILD files are only added to CTest with this.
 option(OPEN_SPIEL_RUN_MANUAL_TESTS "Add the tests tagged manual." OFF)
 
+<<<<<<< HEAD
 if (OPEN_SPIEL_BUILD_WITH_LIBTORCH AND NOT OPEN_SPIEL_BUILD_WITH_LIBNOP)
   message(FATAL_ERROR
     "OPEN_SPIEL_BUILD_WITH_LIBTORCH requires OPEN_SPIEL_BUILD_WITH_LIBNOP")
+=======
+<<<<<<< HEAD
+# For now, let's enable all the tests.
+enable_testing()
+
+set (OPEN_SPIEL_CORE_FILES
+  action_view.h
+  action_view.cc
+  canonical_game_strings.cc
+  canonical_game_strings.h
+  game_parameters.cc
+  game_parameters.h
+  matrix_game.cc
+  matrix_game.h
+  normal_form_game.h
+  observer.cc
+  observer.h
+  policy.cc
+  policy.h
+  simultaneous_move_game.cc
+  simultaneous_move_game.h
+  spiel.cc
+  spiel.h
+  spiel_bots.cc
+  spiel_bots.h
+  spiel_globals.h
+  spiel_utils.cc
+  spiel_utils.h
+  tensor_game.cc
+  tensor_game.h
+  utils/status.h
+  utils/status.cc
+  utils/usage_logging.h
+  utils/usage_logging.cc
+)
+
+# We add the subdirectory here so open_spiel_core can #include absl.
+set(ABSL_PROPAGATE_CXX_STD ON)
+add_subdirectory (abseil-cpp)
+include_directories (abseil-cpp)
+
+# Similarly for json
+add_subdirectory (json)
+include_directories (json/include)
+
+# Find basic Python paths needed by C++ code (e.g. pybind11_json and pybind11_abseil).
+if (OPEN_SPIEL_BUILD_WITH_PYTHON)
+  find_package(Python3 COMPONENTS Interpreter Development)
+  include_directories(pybind11_abseil pybind11_json ../pybind11/include)
+  include_directories(${Python3_INCLUDE_DIRS})
+endif()
+
+# Include pybind11_abseil and pybind11_json
+include_directories (pybind11_json/include)
+
+# Just the core without any of the games
+add_library(open_spiel_core OBJECT ${OPEN_SPIEL_CORE_FILES})
+target_include_directories (
+  open_spiel_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} abseil-cpp)
+link_libraries(open_spiel_core
+  absl::algorithm
+  absl::flags
+  absl::flags_parse
+  absl::flat_hash_map
+  absl::optional
+  absl::random_random
+  absl::str_format
+  absl::strings
+  absl::time
+)
+
+
+# Just the minimal base library: no games.
+set (OPEN_SPIEL_CORE_OBJECTS $<TARGET_OBJECTS:open_spiel_core>)
+
+set (OPEN_SPIEL_OBJECTS
+  $<TARGET_OBJECTS:open_spiel_core>
+  $<TARGET_OBJECTS:bots>
+  $<TARGET_OBJECTS:games>
+  $<TARGET_OBJECTS:game_transforms>
+  $<TARGET_OBJECTS:bridge_double_dummy_solver>
+  $<TARGET_OBJECTS:algorithms>
+  $<TARGET_OBJECTS:evaluation>
+  $<TARGET_OBJECTS:utils>
+  $<TARGET_OBJECTS:tests>
+)
+if (OPEN_SPIEL_BUILD_WITH_HANABI)
+  set(OPEN_SPIEL_OBJECTS ${OPEN_SPIEL_OBJECTS}
+      $<TARGET_OBJECTS:hanabi_learning_environment>)
+endif()
+if (OPEN_SPIEL_BUILD_WITH_ACPC)
+  set(OPEN_SPIEL_OBJECTS ${OPEN_SPIEL_OBJECTS}
+      $<TARGET_OBJECTS:universal_poker_clib>
+      $<TARGET_OBJECTS:universal_poker_lib>)
+endif()
+if (OPEN_SPIEL_BUILD_WITH_XINXIN)
+  set(OPEN_SPIEL_OBJECTS ${OPEN_SPIEL_OBJECTS} $<TARGET_OBJECTS:xinxin>)
+endif()
+if (OPEN_SPIEL_BUILD_WITH_ROSHAMBO)
+  set(OPEN_SPIEL_OBJECTS ${OPEN_SPIEL_OBJECTS} $<TARGET_OBJECTS:roshambo>)
+endif()
+if (OPEN_SPIEL_BUILD_WITH_LIBNOP)
+  include_directories(libnop/libnop/include)
+	# add_subdirectory(libnop)
+endif()
+if (OPEN_SPIEL_BUILD_WITH_LIBTORCH)
+  list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/libtorch/libtorch")
+  find_package(Torch REQUIRED)
+	# add_subdirectory(libtorch)
+  include_directories(${TORCH_INCLUDE_DIRS})
+  # Use following to link your_target_executable with torch libraries:
+  # target_link_libraries(your_target_executable ${TORCH_LIBRARIES})
+endif()
+if (OPEN_SPIEL_BUILD_WITH_GAMUT)
+  set(OPEN_SPIEL_OBJECTS ${OPEN_SPIEL_OBJECTS} $<TARGET_OBJECTS:gamut>)
+endif()
+if (OPEN_SPIEL_BUILD_WITH_ORTOOLS)
+  # Compile with OR-Tools headers and link against binary distribution,
+  # downloaded from https://developers.google.com/optimization/install/cpp/linux
+  # and assumed to be in $HOME/or-tools.
+  # The flags were taken from the compilation of linear_programming.cc after
+  # running make test_cc.
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DUSE_BOP -DUSE_GLOP -DUSE_CBC -DUSE_CLP -DUSE_SCIP -pthread")
+  set(ORTOOLS_HOME "${CMAKE_CURRENT_SOURCE_DIR}/ortools")
+  set(ORTOOLS_INC_DIRS ${ORTOOLS_HOME} ${ORTOOLS_HOME}/include)
+  set(ORTOOLS_LIB_DIRS ${ORTOOLS_HOME}/lib ${ORTOOLS_HOME}/lib64)
+  set(ORTOOLS_LIBS z rt pthread ortools)
+  set_target_properties(open_spiel_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
+  include_directories(${ORTOOLS_INC_DIRS})
+  link_directories(${ORTOOLS_LIB_DIRS})
+  # Use following to link your_target_executable with OrTools libraries:
+  # target_link_libraries(your_target_executable ${ORTOOLS_LIBS})
+endif()
+
+# We have the parent of this directory in the include path, so that we can
+# include for example "open_spiel/spiel.h" (assuming this directory is named
+# open_spiel).
+include_directories(..)
+
+add_subdirectory (algorithms)
+add_subdirectory (bots)
+add_subdirectory (evaluation)
+add_subdirectory (examples)
+add_subdirectory (games)
+add_subdirectory (game_transforms)
+
+if (OPEN_SPIEL_BUILD_WITH_PYTHON)
+  add_subdirectory (python)
+endif()
+
+add_subdirectory (utils)
+
+if (OPEN_SPIEL_BUILD_WITH_JULIA)
+  add_subdirectory (julia)
+=======
+if (OPEN_SPIEL_BUILD_WITH_LIBTORCH AND NOT OPEN_SPIEL_BUILD_WITH_LIBNOP)
+  message(FATAL_ERROR
+    "OPEN_SPIEL_BUILD_WITH_LIBTORCH requires OPEN_SPIEL_BUILD_WITH_LIBNOP")
+>>>>>>> upstream/master
+>>>>>>> libtorch
 endif()
 
 # Build a shared library, i.e. libopen_spiel.so. We generally only enable this
