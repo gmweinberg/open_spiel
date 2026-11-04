@@ -4,11 +4,8 @@ import torch.nn as nn
 class PredictionNet(nn.Module):
     def __init__(self, players=None, actions=None, input_size=None, hidden_size=None):
         super().__init__()
-        if not input_size:
-            input_size = 4 * (players - 1) * actions;
         if not hidden_size:
             hidden_size = 2 * input_size
-
 
         self.body = nn.Sequential(
             nn.Linear(input_size, hidden_size),

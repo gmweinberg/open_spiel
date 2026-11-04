@@ -1,6 +1,6 @@
 #!/usr/bin/python
 from time import time
-from random import shuffle, randrange, seed, random
+from random import shuffle, randrange, seed, random, choice
 import torch
 import pyspiel
 from open_spiel.python.bots.cycle import CycleBot
@@ -33,14 +33,15 @@ def prediction_train_batch(bots_games, net, optimizer, evaluate=False, clue=Fals
         game = elm[0]
         bot = elm[1]
         player_id = elm[2]
-        losses.extend(prediction_train_batchlet(game, bot, player_id, net, optimizer, clue))
+        losses.extend(prediction_train_batchlet(game, bot,
+          player_id, net=net, clue=clue))
     optimizer.zero_grad()
     loss = torch.stack(losses).mean()
     loss.backward()
     optimizer.step()
 
 
-def prediction_train_batchlet(game, bot, player_id, net, optimizer, clue=False):
+def prediction_train_batchlet(game, bot, player_id, net, clue=False):
     losses = []
     depth = 4
     bot.player_id = 1 - player_id
@@ -56,28 +57,29 @@ def prediction_train_batchlet(game, bot, player_id, net, optimizer, clue=False):
             dtype=torch.float32,
         )
 
+        bot_actions = state.legal_actions(1 - player_id)
         logits = net(obs)
-        probs = torch.softmax(logits, dim=-1)
+        legal_logits = logits[:len(bot_actions)]
 
         # Play randomly to explore different histories
+        net_actions = state.legal_actions(player_id)
         if clue:
-            better = expected_score(state, player_id, net, depth)[0]
-            if random() < 0.8:
-                net_action = better
+            best = expected_score(state, player_id, net, depth)[0]
+            if random() < 0.6:
+                net_action = best
             else:
-                net_action = 1 - better
+                net_action = choice(net_actions)
         else:
-            net_action = randrange(2)
+            net_action = choice(net_actions)
 
         if player_id == 0:
             state.apply_actions([net_action, bot_action])
         else:
             state.apply_actions([bot_action, net_action])
 
-        # 0 means cooperate; 1 means defect
         target = torch.tensor(bot_action, dtype=torch.long)
         loss = torch.nn.functional.cross_entropy(
-            logits.unsqueeze(0), target.long().reshape(1)
+            legal_logits.unsqueeze(0), target.long().reshape(1)
         )
         losses.append(loss)
     return losses
@@ -184,19 +186,21 @@ def expected_score(state, player_id, net, depth):
         return expected_score_cache[key]
 
     scores = []
+    my_actions = state.legal_actions(player_id)
+    bot_actions = state.legal_actions(1 - player_id)
     obs = torch.tensor(
         state.observation_tensor(player_id),
         dtype=torch.float32,
     )
     with torch.no_grad():
         logits = net(obs)
-        probs = torch.softmax(logits, dim=-1).tolist()
+        probs = torch.softmax(logits[:len(bot_actions)], dim=-1).tolist()
 
 
-    for my_action in (0, 1):
+    for my_action in my_actions:
         score = 0.0
 
-        for bot_action in (0, 1):
+        for bot_action in bot_actions:
             if probs[bot_action] == 0: # never happens?
                 continue
             if player_id == 0:
@@ -209,6 +213,8 @@ def expected_score(state, player_id, net, depth):
 
             if depth == 0:
                 future = 0.0
+            elif state0.is_terminal():
+                future = 0.0
             else:
                 future = expected_score(state0, player_id, net,  depth - 1)[1]
 
@@ -216,11 +222,10 @@ def expected_score(state, player_id, net, depth):
 
         scores.append(score)
 
-    if scores[0] > scores[1]:
-        expected_score_cache[key] = 0, scores[0]
-    else:
-        expected_score_cache[key] = 1, scores[1]
-    return expected_score_cache[key]
+    best_index = max(range(len(scores)), key=lambda i: scores[i])
+    result = (my_actions[best_index], scores[best_index])
+    expected_score_cache[key] = result
+    return result
 
 def play_match(game, bot, bot_id, net):
     """Have brute play game against a bot.
