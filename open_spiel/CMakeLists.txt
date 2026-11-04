@@ -1,8 +1,17 @@
-# Version >= 3.12 required for new FindPython module
-# https://cmake.org/cmake/help/v3.12/release/3.12.html
-# Version >= 3.17 required for CMAKE_CUDA_STANDARD
-# https://gitlab.kitware.com/cmake/cmake/-/issues/19123
-cmake_minimum_required (VERSION 3.17)
+# Root CMake file for OpenSpiel. This file is hand-written.
+#
+# Per-package CMakeLists.txt files (and targets.cmake for the targets of this
+# directory) are generated from the Bazel BUILD files by
+# scripts/generate_cmake.sh: edit the BUILD files, not the generated files.
+# This file only holds what BUILD files do not describe: compiler flags per
+# build type and compiler, the optional dependency switches, the external
+# dependencies (cmake/dependencies.cmake), and the top-level directory list.
+
+# Version >= 3.21 required for linking object files transitively through
+# INTERFACE libraries ($<TARGET_OBJECTS:...> in target_link_libraries), which
+# the generated files use to keep game registration (alwayslink) working.
+# https://cmake.org/cmake/help/v3.21/command/target_link_libraries.html#linking-object-libraries-via-target-objects
+cmake_minimum_required (VERSION 3.21)
 project (open_spiel)
 
 # Define some nice terminal colors.
@@ -90,7 +99,8 @@ set (CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # Use this macro to define optional dependencies.
 # You can then use your chosen DEP_NAME as a variable to check if that
-# dependency is enabled -- see code below.
+# dependency is enabled -- see code below. The generated CMakeLists.txt files
+# guard the targets that need an optional dependency with `if(DEP_NAME)`.
 macro(openspiel_optional_dependency DEP_NAME DEP_DEFAULT DEP_DESCRIPTION)
   set (${DEP_NAME} ${DEP_DEFAULT} CACHE BOOL ${DEP_DESCRIPTION})
   if(NOT DEFINED ENV{${DEP_NAME}})
@@ -146,9 +156,10 @@ openspiel_optional_dependency(OPEN_SPIEL_ENABLE_PYTHON_MISC       OFF
 openspiel_optional_dependency(OPEN_SPIEL_BUILDING_WHEEL           OFF
   "Building a Python wheel?")
 
-# Needed to disable Abseil tests.
-set (BUILD_TESTING OFF)
+# Tests tagged "manual" in the BUILD files are only added to CTest with this.
+option(OPEN_SPIEL_RUN_MANUAL_TESTS "Add the tests tagged manual." OFF)
 
+<<<<<<< HEAD
 # For now, let's enable all the tests.
 enable_testing()
 
@@ -301,6 +312,11 @@ add_subdirectory (utils)
 
 if (OPEN_SPIEL_BUILD_WITH_JULIA)
   add_subdirectory (julia)
+=======
+if (OPEN_SPIEL_BUILD_WITH_LIBTORCH AND NOT OPEN_SPIEL_BUILD_WITH_LIBNOP)
+  message(FATAL_ERROR
+    "OPEN_SPIEL_BUILD_WITH_LIBTORCH requires OPEN_SPIEL_BUILD_WITH_LIBNOP")
+>>>>>>> upstream/master
 endif()
 
 # Build a shared library, i.e. libopen_spiel.so. We generally only enable this
@@ -313,19 +329,72 @@ if(NOT DEFINED ENV{BUILD_SHARED_LIB})
   set (ENV{BUILD_SHARED_LIB} OFF)
 endif()
 set (BUILD_SHARED_LIB $ENV{BUILD_SHARED_LIB})
+
+# Needed to disable Abseil tests.
+set (BUILD_TESTING OFF)
+
+# For now, let's enable all the tests.
+enable_testing()
+
+# External dependencies: Abseil, nlohmann/json, Python and pybind11, and the
+# optional ones enabled above. Each is exposed as a target (absl::*,
+# nlohmann_json::nlohmann_json, open_spiel_ext::*) that the generated files
+# link against.
+include (cmake/dependencies.cmake)
+
+# We have the parent of this directory in the include path, so that we can
+# include for example "open_spiel/spiel.h" (assuming this directory is named
+# open_spiel).
+include_directories (..)
+
+## OpenSpiel targets, generated from the BUILD files.
+# Targets of this directory (the core library, test utilities, ...).
+include (targets.cmake)
+
+# Sub-packages. Each generated CMakeLists.txt adds its own sub-packages.
+add_subdirectory (algorithms)
+add_subdirectory (bots)
+add_subdirectory (evaluation)
+add_subdirectory (examples)
+add_subdirectory (games)
+add_subdirectory (game_transforms)
+add_subdirectory (utils)
+
+if (OPEN_SPIEL_BUILD_WITH_PYTHON)
+  add_subdirectory (python)
+endif()
+
+# Every OpenSpiel library (all games, algorithms, bots, ...), with the object
+# files of the libraries that register games or bots. Used by the hand-written
+# directories below and by the shared library.
+get_property (OPEN_SPIEL_LIBRARIES GLOBAL PROPERTY OPEN_SPIEL_OBJECT_LIBRARIES)
+add_library (open_spiel_full INTERFACE)
+target_link_libraries (open_spiel_full INTERFACE ${OPEN_SPIEL_LIBRARIES})
+
+## Hand-written directories that have no BUILD file.
+if (OPEN_SPIEL_BUILD_WITH_LIBNOP)
+  add_subdirectory (libnop)
+endif()
+if (OPEN_SPIEL_BUILD_WITH_LIBTORCH)
+  add_subdirectory (libtorch)
+  add_subdirectory (algorithms/alpha_zero_torch)
+endif()
+if (OPEN_SPIEL_BUILD_WITH_JULIA)
+  add_subdirectory (julia)
+endif()
+
 if (BUILD_SHARED_LIB)
-  if (OPEN_SPIEL_BUILD_WITH_ORTOOLS)
-    add_library(open_spiel SHARED ${OPEN_SPIEL_OBJECTS}
-      # Optionally include files that use external dependencies, for example
-      # linear program specification for finding Nash equilibria.
-      $<TARGET_OBJECTS:open_spiel_ortools>
-    )
-  else()
-    add_library(open_spiel SHARED ${OPEN_SPIEL_OBJECTS})
-  endif()
-  target_include_directories(open_spiel PUBLIC
-      ${CMAKE_CURRENT_SOURCE_DIR} abseil-cpp)
-  target_link_libraries(open_spiel PUBLIC
+  # CMake needs at least one source file to create a library.
+  set (OPEN_SPIEL_SHARED_LIB_SOURCE
+       ${CMAKE_CURRENT_BINARY_DIR}/open_spiel_shared_lib.cc)
+  file (WRITE ${OPEN_SPIEL_SHARED_LIB_SOURCE}
+        "// Empty: the library consists of the OpenSpiel object files.\n")
+  add_library (open_spiel SHARED ${OPEN_SPIEL_SHARED_LIB_SOURCE})
+  target_include_directories (open_spiel PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR} abseil-cpp)
+  # PRIVATE: users of the shared library must not link the object files again.
+  target_link_libraries (open_spiel PRIVATE open_spiel_full)
+  target_link_libraries (open_spiel PUBLIC
     absl::algorithm
     absl::flat_hash_map
     absl::optional
@@ -333,10 +402,13 @@ if (BUILD_SHARED_LIB)
     absl::str_format
     absl::strings
     absl::time
+  )
+  if (OPEN_SPIEL_BUILD_WITH_ORTOOLS)
     # Optionally link external dependencies, for example OrTools for solving
     # linear programs.
-    ${ORTOOLS_LIBS}
-  )
+    target_link_libraries (open_spiel PUBLIC ${ORTOOLS_LIBS})
+  endif()
 endif()
 
-add_subdirectory (tests)
+# Tests and binaries that only exist in the CMake build.
+include (cmake/extra_targets.cmake)
