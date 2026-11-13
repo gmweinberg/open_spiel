@@ -76,7 +76,7 @@ inline const std::vector<int>& ObservationTensorShape() {
   static std::vector<int> shape{
       21 /* piece types * colours + empty */ + 1 /* repetition count */ +
           1 /* side to move */ + 1 /* irreversible move counter */ +
-          4 /* castling rights */ + 10 /* pockets */,
+          4 /* castling rights */ + 10 /* pockets */ + 1 /* ep */,
       kMaxBoardSize, kMaxBoardSize};
   return shape;
 }
@@ -287,6 +287,8 @@ class CrazyhouseGame : public Game {
 
   bool IsChess960() const { return chess960_; }
 
+	bool ShowEpSquare() const { return show_ep_square_; }
+
   std::string Chess960LookupFEN(int index) const {
     SPIEL_CHECK_GE(index, 0);
     SPIEL_CHECK_LT(index, initial_fens_.size());
@@ -302,6 +304,7 @@ class CrazyhouseGame : public Game {
   bool king_of_hill_;
   int insanity_;
   std::vector<std::string> initial_fens_;  // Used for chess960.
+  bool show_ep_square_;
 };
 
 }  // namespace crazyhouse

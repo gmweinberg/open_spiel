@@ -468,6 +468,24 @@ void DropMateTest() {
   SPIEL_CHECK_EQ(state->Returns()[crazyhouse::ColorToPlayer(Color::kBlack)], 1);
 }
 
+void EpSquareTest() {
+  auto game = open_spiel::LoadGame("crazyhouse");
+  auto state = game->NewInitialState();
+  CrazyhouseState* ch_state = dynamic_cast<CrazyhouseState*>(state.get());
+  ApplyLANMove("f2f4", ch_state, false);
+  ApplyLANMove("a7a6", ch_state, false);
+  ApplyLANMove("f4f5", ch_state, false);
+  ApplyLANMove("e7e5", ch_state, false);
+  std::vector<float> v2(game->ObservationTensorSize());
+  ch_state->ObservationTensor(ch_state->CurrentPlayer(),
+                                 absl::MakeSpan(v2));
+	const auto& shape = game->ObservationTensorShape();
+  SPIEL_CHECK_EQ(ValueAt(v2, shape, 38, "e6"), 1.0);  // e6 is sp square
+  SPIEL_CHECK_EQ(ValueAt(v2, shape, 38, "e5"), 0.0);  // e5 is not
+
+
+}
+
 void StickySticksTest() {
   const std::string fen =
       "r1b1kbnr/pppp2Pp/2n2q2/4p3/8/8/PPPP1PPP/RNBQKBNR[PP] w KQkq - 0 5";
@@ -539,4 +557,5 @@ int main(int argc, char** argv) {
   open_spiel::crazyhouse::KOTHMarchTest();
   open_spiel::crazyhouse::StickySticksTest();
   open_spiel::crazyhouse::HashTest();
+  open_spiel::crazyhouse::EpSquareTest();
 }

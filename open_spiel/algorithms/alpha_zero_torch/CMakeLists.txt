@@ -30,11 +30,15 @@ add_test(torch_vpnet_test torch_vpnet_test)
 # Torch examples in ../../examples, which have no BUILD target either.
 add_executable(alpha_zero_torch_example
   ../../examples/alpha_zero_torch_example.cc)
-target_link_libraries(alpha_zero_torch_example PRIVATE alpha_zero_torch)
+target_link_libraries(alpha_zero_torch_example PRIVATE alpha_zero_torch absl::flags absl::flags_parse)
 
 add_executable(alpha_zero_torch_game_example
   ../../examples/alpha_zero_torch_game_example.cc)
-target_link_libraries(alpha_zero_torch_game_example PRIVATE alpha_zero_torch)
+target_link_libraries(alpha_zero_torch_game_example PRIVATE alpha_zero_torch absl::flags absl::flags_parse)
+
+add_executable(alpha_zero_torch_server
+  ../../examples/alpha_zero_torch_server.cc)
+target_link_libraries(alpha_zero_torch_server PRIVATE alpha_zero_torch absl::flags absl::flags_parse)
 
 add_executable(dqn_torch_example ../../examples/dqn_torch_example.cc)
 target_link_libraries(dqn_torch_example PRIVATE

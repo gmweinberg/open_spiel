@@ -66,7 +66,7 @@ const GameType kGameType{
     {{"chess960", GameParameter(kDefaultChess960)},
      {"insanity", GameParameter(kDefaultInsanity)},
      {"sticky_promotions", GameParameter(kDefaultStickyPromotions)},
-     {"king_of_hill", GameParameter(kDefaultKingOfHill)}}};
+{"king_of_hill", GameParameter(kDefaultKingOfHill)}}};
 
 std::shared_ptr<const Game> Factory(const GameParameters& params) {
   return std::shared_ptr<const Game>(new CrazyhouseGame(params));
@@ -103,6 +103,17 @@ void AddScalarPlane(T val, T min, T max,
 // Adds a binary scalar plane.
 void AddBinaryPlane(bool val, absl::Span<float>::iterator& value_it) {
   AddScalarPlane<int>(val ? 1 : 0, 0, 1, value_it);
+}
+
+void AddEnPassantPlane(const CrazyhouseBoard& board,
+                       absl::Span<float>::iterator& value_it) {
+  const Square ep_square = board.EpSquare();
+
+  for (int8_t y = 0; y < kMaxBoardSize; ++y) {
+    for (int8_t x = 0; x < kMaxBoardSize; ++x) {
+      *value_it++ = (Square {x, y} == ep_square ? 1.0f : 0.0f);
+    }
+  }
 }
 }  // namespace
 
@@ -516,6 +527,8 @@ void CrazyhouseState::ObservationTensor(Player player,
       AddScalarPlane(count, 0, kMaxPocketCount, value_it);
     }
   }
+
+  AddEnPassantPlane(Board(), value_it);
   SPIEL_CHECK_EQ(value_it, values.end());
 }
 
@@ -639,6 +652,8 @@ CrazyhouseGame::CrazyhouseGame(const GameParameters& params)
   insanity_ = ParameterValue<int>("insanity");
   sticky_promotions_ = ParameterValue<bool>("sticky_promotions");
   king_of_hill_ = ParameterValue<bool>("king_of_hill");
+  // show_ep_square_ = ParameterValue<bool>("show_ep_square");
+  show_ep_square_ = true;
 }
 
 std::unique_ptr<State> CrazyhouseGame::DeserializeState(
