@@ -80,6 +80,7 @@ EXPECTED_MANDATORY_GAMES = frozenset([
     "gin_rummy",
     "go",
     "go_fish",
+    "gobblet",
     "gomoku",
     "goofspiel",
     "havannah",
