@@ -30,7 +30,7 @@ open_spiel.python.gui.controllers, when asked to by
       --controllers open_spiel.python.scale.serve.controller
 
 or by `--controllers auto` and the entry point OpenSpiel's distribution
-declares for it:
+declares for it (a standalone install of this package declares none):
 
   [project.entry-points."open_spiel.gui.controllers"]
   checkpoint = "open_spiel.python.scale.serve.controller"
@@ -58,7 +58,7 @@ seat) checks the seat is to move and returns a legal action; last_probs
 holds that decision's distribution. On a move where the agent's rules and
 OpenSpiel's differ it still returns a legal action (checkpoint_bot, "Rules
 differences"): it logs a WARNING, counts it in `stats` and describes it in
-`last_notice`. The GUI's controller contract (version 8) reads
+`last_notice`. The GUI's controller contract (version 9) reads
 `last_notice` with the action and shows it to that seat's viewer and to
 omniscient viewers; the notice changes nothing of play, and a blank one or
 one over 200 characters fails the seat. CheckpointBot's `last_notice` is
@@ -73,6 +73,7 @@ import re
 import threading
 from typing import Any, Callable, Mapping, Optional
 
+from open_spiel.python.scale.serve import build_check
 from open_spiel.python.scale.serve import checkpoint_bot as checkpoint_bot_lib
 from open_spiel.python.scale.serve import games
 from open_spiel.python.scale.serve import server as server_lib
@@ -183,11 +184,14 @@ def refusal(game: Any) -> Optional[str]:
     The refusal, or None.
   """
   name = game.get_type().short_name
-  if name not in games.served_games():
+  if name not in games.served_pyspiel_games():
     return (
         f"{LABEL} plays only the games it has an env for, and {name} is not "
         "one."
     )
+  problem = build_check.pyspiel_game_problem(game)
+  if problem is not None:
+    return f"{LABEL} cannot play this build's {name}: {problem}"
   return None
 
 

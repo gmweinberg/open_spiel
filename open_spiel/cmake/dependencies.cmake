@@ -5,6 +5,14 @@
 # scripts/bazel_to_cmake/label_map.py). The sources of the dependencies are
 # fetched by install.sh into the directories used below.
 
+if (NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/abseil-cpp/CMakeLists.txt")
+  message (FATAL_ERROR
+    "The C++ dependencies are missing (open_spiel/abseil-cpp, among others). "
+    "Run ./install.sh from the repository root first, or "
+    "OPEN_SPIEL_INSTALL_SYSTEM_DEPS=0 ./install.sh to fetch them without "
+    "installing system packages.")
+endif()
+
 ## Abseil.
 set (ABSL_PROPAGATE_CXX_STD ON)
 add_subdirectory (abseil-cpp)
@@ -21,8 +29,17 @@ if (OPEN_SPIEL_BUILD_WITH_PYTHON)
   if (OPEN_SPIEL_BUILDING_WHEEL)
     # When building a wheel, need to use this. See:
     # https://github.com/joerick/cibuildwheel/issues/639#issuecomment-817872369
-    message(NOTICE "Building Wheel Detected. Finding Python Interpeter Development.Module")
-    find_package(Python3 COMPONENTS Interpreter Development.Module REQUIRED)
+    if (CMAKE_CROSSCOMPILING)
+      message(NOTICE "Cross-compiling wheel detected. Finding Python Development.Module")
+      if (DEFINED OPEN_SPIEL_PYTHON_VERSION)
+        find_package(Python3 ${OPEN_SPIEL_PYTHON_VERSION} EXACT COMPONENTS Development.Module REQUIRED)
+      else()
+        find_package(Python3 COMPONENTS Development.Module REQUIRED)
+      endif()
+    else()
+      message(NOTICE "Building Wheel Detected. Finding Python Interpeter Development.Module")
+      find_package(Python3 COMPONENTS Interpreter Development.Module REQUIRED)
+    endif()
   else()
     message(NOTICE "Not building wheel. Finding Python normally...")
     find_package(Python3 COMPONENTS Interpreter Development)

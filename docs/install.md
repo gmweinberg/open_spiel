@@ -9,10 +9,11 @@ OpenSpiel is to use pip. On MacOS or Linux, simply run:
 python3 -m pip install open_spiel
 ```
 
-The binary distribution is new as of OpenSpiel 1.0.0, and is only supported on
-x86_64 architectures. If you encounter any problems, you can still install
-OpenSpiel via pip from source (see below), but please open an issue to let us
-know about the problem.
+Pre-built binary wheels are available on PyPI for Linux (`x86_64`, `aarch64`),
+macOS (`arm64`), and Windows (`x64`, `ARM64`; see
+[Windows installation instructions](windows.md)). If you encounter any problems,
+you can still install OpenSpiel via pip from source (see below), but please open
+an issue to let us know about the problem.
 
 ### Python-only installation via pip (from source).
 
@@ -93,6 +94,16 @@ In a nutshell:
 
     ```bash
     ./install.sh
+    ```
+
+    `./install.sh` downloads the C++ dependencies into the checkout, which
+    `pip install -e .` and the CMake build need. It also installs system
+    packages, with `sudo apt-get` on Debian or Ubuntu and with Homebrew on
+    macOS. To install the system packages yourself (see above) and only
+    download the C++ dependencies, run
+
+    ```bash
+    OPEN_SPIEL_INSTALL_SYSTEM_DEPS=0 ./install.sh
     ```
 
 3.  Install your [Python dependencies](#installing-python-dependencies), e.g. in

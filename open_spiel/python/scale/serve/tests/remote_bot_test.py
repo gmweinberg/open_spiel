@@ -42,13 +42,13 @@ import pyspiel
 
 @pytest.fixture(name="leduc_dir", scope="module")
 def _leduc_dir(tmp_path_factory):
-  """A leduc artifact on disk, written once per module.
+  """A leduc_poker checkpoint folder, shared by the module's tests.
 
   Args:
-    tmp_path_factory: pytest's temporary directory factory.
+    tmp_path_factory: pytest's temporary folder factory.
 
   Returns:
-    The artifact's directory.
+    The folder.
   """
   return rbh.write_leduc(tmp_path_factory.mktemp("leduc"))
 
@@ -82,17 +82,24 @@ def test_reply_is_checkpoint_bots_move(leduc_dir):
   for g in range(8):
 
     def choose(s, seat):
-      """The served reply at `s` for `seat`.
+      """The served bot's move and notice at s; checks its bot output.
 
       Args:
         s: the state.
-        seat: the seat to move.
+        seat: the bot's seat.
 
       Returns:
         (action, notice).
       """
       reply = served.step("full_state", rbh.request_of(game, s, seat))
-      assert set(reply) == {"action", "notice"}, reply
+      assert set(reply) == {
+          "action",
+          "notice",
+          "policy",
+          "value",
+          "decided_by",
+      }, reply
+      check_bot_output(reply, ref, s, seat)
       return reply["action"], reply["notice"]
 
     for hist, action, notice in rbh.play(game, choose, bot_seat=g % 2, rng=rng):
@@ -103,6 +110,56 @@ def test_reply_is_checkpoint_bots_move(leduc_dir):
       assert notice is None
       n += 1
   assert n >= 8, n
+
+
+def check_bot_output(reply, ref, s, seat):
+  """The reply's bot output is checkpoint_bot's distribution at s (contract 9).
+
+  Args:
+    reply: the served reply.
+    ref: a checkpoint_bot of the same artifact.
+    s: the state.
+    seat: the bot's seat.
+  """
+  ref.choose_action(s, seat)
+  policy = reply["policy"]
+  assert [e["action"] for e in policy] == sorted(
+      ref.last_probs, key=lambda a: (-ref.last_probs[a], a)
+  ), (policy, ref.last_probs)
+  assert {e["action"] for e in policy} <= set(s.legal_actions(seat))
+  for e in policy:
+    assert e["prob"] == pytest.approx(ref.last_probs[e["action"]])
+    assert 0.0 <= e["prob"] <= 1.0
+    assert e["label"] == s.action_to_string(seat, e["action"])
+  probs = [e["prob"] for e in policy]
+  assert probs == sorted(probs, reverse=True)
+  assert sum(probs) <= 1.0 + 1e-3
+  assert policy[0]["action"] == reply["action"]  # greedy: the likeliest
+  assert reply["decided_by"] in ("network", "forced"), reply["decided_by"]
+  if reply["decided_by"] == "network":
+    assert isinstance(reply["value"], float), reply["value"]
+
+
+def test_bot_output_sends_none_for_a_value_that_is_not_finite():
+  """A NaN value is sent as None; the policy is ranked and clipped."""
+  game = pyspiel.load_game(rbh.GAME)
+  s = game.new_initial_state()
+  s.apply_action(0)
+  s.apply_action(3)
+  reply = server_lib.Reply(
+      action=2,
+      probs={1: 0.0, 2: 1.0000001},
+      value=float("nan"),
+      decider="network",
+      artifact="a@3",
+  )
+  out = remote_bot.bot_output(reply, s, 0)
+  assert out["value"] is None
+  assert out["decided_by"] == "network"
+  assert [(e["action"], e["prob"]) for e in out["policy"]] == [
+      (2, 1.0),
+      (1, 0.0),
+  ]
 
 
 def test_config_names_the_artifact(leduc_dir):
@@ -183,11 +240,11 @@ def test_divergence_notice_keeps_to_the_seat():
   secret = "replay failed at history index 1: action 3 is not legal"
 
   def reply(decider, notice):
-    """A Reply of action 1 by `decider` with `notice`.
+    """A server reply with this decider and notice.
 
     Args:
-      decider: the Reply's decider.
-      notice: the Reply's notice.
+      decider: the reply's decider.
+      notice: its notice.
 
     Returns:
       The Reply.
