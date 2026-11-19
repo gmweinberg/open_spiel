@@ -1,0 +1,18 @@
+# call from top open_spiel
+cmake --build build --target alpha_zero_torch_game_example -j$(nproc)
+
+cmake --build build --target crazyhouse_pretrain -j$(nproc)
+
+cmake -S open_spiel -B build -DOPEN_SPIEL_BUILD_WITH_PYTHON=ON
+
+cmake --build build -j$(nproc)
+
+open_spiel/scripts/build_and_run_tests.sh
+open_spiel/scripts/build_and_run_tests.sh --build_only=true
+python -m pip install -e . --no-build-isolation
+
+
+
+
+
+

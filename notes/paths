@@ -1,0 +1,5 @@
+open_spiel/python/tests/games_go_fish_test.py
+
+open_spiel/python/pybind11/games_go_fish.cc
+
+build/games/go_fish_test

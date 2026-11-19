@@ -1,0 +1,9 @@
+# new installation
+./install.txt # this will fail later but early parts do useful stuff
+python3.12 -m venv venv
+. venv/bin/activate
+pip install --upgrade pip
+pip install -r requirements.txt
+git remote add upstream github.com/google-deepmind/open_spiel
+rm -rf build
+

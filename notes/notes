@@ -1,0 +1,18 @@
+open_spiel/scripts/build_and_run_tests.sh 
+open_spiel/scripts/build_and_run_tests.sh --build_only=true
+python -m pip install -e . --no-build-isolation
+
+python3 open_spiel/python/examples/mcts.py --game=yacht --player1=mcts --player2=mcts
+python3 open_spiel/python/examples/mcts.py --game=yacht"(dice_sides=8,num_dice=6)" --player1=mcts --player2=mcts
+
+
+# veryclean
+rm -rf build
+find open_spiel -name '*.so' -delete
+find . -name '*.pyc' -delete
+find . -name '__pycache__' -type d -exec rm -rf {} +
+
+clang++ -std=c++17 -fsyntax-only   -I.   -I./open_spiel/abseil-cpp   ./open_spiel/games/shogi/shogi_board.cc
+clang++ -std=c++17 -fsyntax-only   -I.   -I./open_spiel/abseil-cpp   -I./open_spiel/json/include ./open_spiel/games/shogi/shogi.cc
+
+When stuck, likely something is out of date, especially the python

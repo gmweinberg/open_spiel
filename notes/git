@@ -1,0 +1,10 @@
+git diff --name-status upstream/master
+
+git log --name-status
+
+git restore filename # retore filename to last save in current barnch
+git restore --source=branchname filename # restore file to version in upstream master
+git switch -c new_branch # c =create
+git switch upstream/master --detach # always branch a new feature off upstream/master
+
+
